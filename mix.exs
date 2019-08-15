@@ -9,7 +9,14 @@ defmodule Tablespoon.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      preferred_cli_env: [
+        "coveralls.html": :test,
+        "coveralls.json": :test
+      ],
+      test_coverage: [
+        tool: ExCoveralls
+      ]
     ]
   end
 
@@ -35,7 +42,9 @@ defmodule Tablespoon.MixProject do
       {:phoenix, "~> 1.4.9"},
       {:phoenix_pubsub, "~> 1.1"},
       {:jason, "~> 1.0"},
-      {:plug_cowboy, "~> 2.0"}
+      {:plug_cowboy, "~> 2.0"},
+      {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.11", only: [:test], runtime: false}
     ]
   end
 end
