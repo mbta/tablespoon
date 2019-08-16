@@ -19,7 +19,7 @@ defmodule TablespoonWeb.Controllers.PriorityTest do
     end
   end
 
-  defp gen_params() do
+  defp gen_params do
     time = System.system_time(:second)
     min_time = div(time, 10)
     max_time = time * 10
