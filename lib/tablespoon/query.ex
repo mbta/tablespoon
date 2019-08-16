@@ -32,7 +32,7 @@ defmodule Tablespoon.Query do
   @spec new(Keyword.t()) :: t
   def new(opts) do
     opts = Map.new(opts)
-    opts = Map.put(opts, :received_at_mono, System.monotonic_time())
+    opts = Map.put_new_lazy(opts, :received_at_mono, &System.monotonic_time/0)
     struct!(__MODULE__, opts)
   end
 end
