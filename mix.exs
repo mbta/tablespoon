@@ -44,7 +44,8 @@ defmodule Tablespoon.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
-      {:excoveralls, "~> 0.11", only: [:test], runtime: false}
+      {:excoveralls, "~> 0.11", only: [:test], runtime: false},
+      {:stream_data, "~> 0.4.3", only: [:test]}
     ]
   end
 end
