@@ -39,7 +39,7 @@ defmodule Tablespoon.Intersection do
   def registry, do: __MODULE__.Registry
 
   # Server callbacks
-  defstruct [:config]
+  defstruct [:config, time_fn: nil]
 
   @impl GenServer
   def init(config) do
@@ -47,7 +47,7 @@ defmodule Tablespoon.Intersection do
       "started Intersection id=#{config.id} alias=#{config.alias}"
     end)
 
-    {:ok, %__MODULE__{config: config}}
+    {:ok, %__MODULE__{config: config}, config.warning_timeout_ms}
   end
 
   @impl GenServer
@@ -66,7 +66,7 @@ defmodule Tablespoon.Intersection do
       } event_time=#{event_time_iso} processing_time_us=#{processing_time}"
     end)
 
-    {:noreply, state}
+    {:noreply, state, config.warning_timeout_ms}
   end
 
   def handle_cast(message, state) do
@@ -80,5 +80,31 @@ defmodule Tablespoon.Intersection do
 
   def handle_call(message, from, state) do
     super(message, from, state)
+  end
+
+  @impl GenServer
+  def handle_info(:timeout, state) do
+    config = state.config
+
+    time =
+      if state.time_fn do
+        state.time_fn.()
+      else
+        :erlang.time()
+      end
+
+    if time >= config.warning_not_before_time and time <= config.warning_not_after_time do
+      Logger.warn(fn ->
+        "Intersection has not received a message in #{config.warning_timeout_ms}ms - id=#{
+          config.id
+        } alias=#{config.alias}"
+      end)
+    end
+
+    {:noreply, state, config.warning_timeout_ms}
+  end
+
+  def handle_info(message, state) do
+    super(message, state)
   end
 end

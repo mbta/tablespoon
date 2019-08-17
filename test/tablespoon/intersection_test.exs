@@ -6,7 +6,10 @@ defmodule Tablespoon.IntersectionTest do
   @alias "test_alias"
   @config %Config{
     id: "test_id",
-    alias: @alias
+    alias: @alias,
+    warning_timeout_ms: 60_000,
+    warning_not_before_time: {7, 0, 0},
+    warning_not_after_time: {23, 0, 0}
   }
 
   setup do
@@ -49,6 +52,47 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "approach=south"
       assert log =~ "event_time=1970-01-01T00:00:00Z"
       assert log =~ "processing_time_us="
+    end
+  end
+
+  describe "handle_info(:timeout)" do
+    setup do
+      {:ok, state, _timeout} = Intersection.init(@config)
+      {:ok, state: state}
+    end
+
+    test "logs a warning during the timeframe", %{state: state} do
+      state = %{state | time_fn: fn -> {12, 0, 0} end}
+
+      log =
+        capture_log(fn ->
+          assert Intersection.handle_info(:timeout, state) ==
+                   {:noreply, state, state.config.warning_timeout_ms}
+        end)
+
+      assert log =~ "not received"
+    end
+
+    test "does not log a warning before the timeframe", %{state: state} do
+      state = %{state | time_fn: fn -> {6, 0, 0} end}
+
+      log =
+        capture_log(fn ->
+          Intersection.handle_info(:timeout, state)
+        end)
+
+      assert log == ""
+    end
+
+    test "does not log a warning after the timeframe", %{state: state} do
+      state = %{state | time_fn: fn -> {23, 50, 0} end}
+
+      log =
+        capture_log(fn ->
+          Intersection.handle_info(:timeout, state)
+        end)
+
+      assert log == ""
     end
   end
 end
