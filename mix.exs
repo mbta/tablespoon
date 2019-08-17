@@ -45,7 +45,8 @@ defmodule Tablespoon.MixProject do
       {:plug_cowboy, "~> 2.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.11", only: [:test], runtime: false},
-      {:stream_data, "~> 0.4.3", only: [:test]}
+      {:stream_data, "~> 0.4.3", only: [:test]},
+      {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false}
     ]
   end
 end
