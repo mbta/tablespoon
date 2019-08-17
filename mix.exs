@@ -46,7 +46,8 @@ defmodule Tablespoon.MixProject do
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.11", only: [:test], runtime: false},
       {:stream_data, "~> 0.4.3", only: [:test]},
-      {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false},
+      {:logger_splunk_backend, github: "paulswartz/logger_splunk_backend", only: [:prod]}
     ]
   end
 end
