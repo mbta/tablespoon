@@ -35,4 +35,11 @@ defmodule Tablespoon.Query do
     opts = Map.put_new_lazy(opts, :received_at_mono, &System.monotonic_time/0)
     struct!(__MODULE__, opts)
   end
+
+  @doc "Returns the amount of time taken to handle the Query, in the given time unit"
+  @spec processing_time(t, :native | System.time_unit()) :: non_neg_integer
+  def processing_time(%__MODULE__{} = q, time_unit) do
+    diff = System.monotonic_time() - q.received_at_mono
+    System.convert_time_unit(diff, :native, time_unit)
+  end
 end
