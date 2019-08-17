@@ -27,3 +27,4 @@ tablespoon-*.tar
 # this depending on your deployment strategy.
 /priv/static/
 /priv/intersections.json
+/node_modules
