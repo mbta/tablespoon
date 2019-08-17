@@ -22,9 +22,12 @@ defmodule TablespoonWeb.Controllers.Priority do
   - "ref" => could be used to reference the Request, but currently a static value
   """
   use TablespoonWeb, :controller
+  alias Tablespoon.Intersection
 
   def index(conn, params) do
-    _query = query_from_params(params)
+    params
+    |> query_from_params
+    |> Intersection.send_query()
 
     conn
     |> send_resp(204, "")
