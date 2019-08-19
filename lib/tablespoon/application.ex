@@ -35,6 +35,7 @@ defmodule Tablespoon.Application do
     case File.read("priv/intersections.json") do
       {:ok, data} ->
         data
+        |> strip_bom()
         |> Jason.decode!()
         |> Enum.map(&Config.from_json/1)
 
@@ -44,6 +45,27 @@ defmodule Tablespoon.Application do
         end)
 
         []
+    end
+  end
+
+  @doc """
+  Strip the (optional) Unicode Byte-Order-Mark from the given binary.
+
+  ## Examples
+
+      iex> strip_bom("1234")
+      "1234"
+
+      iex> strip_bom("\uFEFF5678")
+      "5678"
+  """
+  def strip_bom(binary) do
+    case :unicode.bom_to_encoding(binary) do
+      {_, 0} ->
+        binary
+
+      {:utf8, length} ->
+        binary_part(binary, length, byte_size(binary) - length)
     end
   end
 end
