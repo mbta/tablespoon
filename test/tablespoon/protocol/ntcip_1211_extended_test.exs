@@ -1,4 +1,5 @@
 defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
+  @moduledoc false
   use ExUnit.Case, async: true
   use ExUnitProperties
   alias Tablespoon.Protocol.NTCIP1211Extended, as: NTCIP

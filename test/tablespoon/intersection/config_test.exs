@@ -1,4 +1,5 @@
 defmodule Tablespoon.Intersection.ConfigTest do
+  @moduledoc false
   use ExUnit.Case, async: true
   alias Tablespoon.Intersection.Config
   import Config

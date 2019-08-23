@@ -1,6 +1,6 @@
 defmodule Tablespoon.Protocol.PMPPTest do
   @moduledoc false
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use ExUnitProperties
   alias Tablespoon.Protocol.PMPP
 

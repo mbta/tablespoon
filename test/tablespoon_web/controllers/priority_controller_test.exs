@@ -1,4 +1,5 @@
 defmodule TablespoonWeb.Controllers.PriorityTest do
+  @moduledoc false
   use ExUnit.Case, async: true
   use ExUnitProperties
   import TablespoonWeb.Controllers.Priority

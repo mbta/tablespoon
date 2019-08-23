@@ -1,4 +1,5 @@
 defmodule Tablespoon.IntersectionTest do
+  @moduledoc false
   use ExUnit.Case
   alias Tablespoon.{Intersection, Intersection.Config, Query}
   import ExUnit.CaptureLog
