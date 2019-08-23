@@ -26,7 +26,7 @@ defmodule Tablespoon.MixProject do
   def application do
     [
       mod: {Tablespoon.Application, []},
-      extra_applications: [:logger, :runtime_tools, :snmp]
+      extra_applications: [:logger, :runtime_tools, :snmp, :ssh]
     ]
   end
 
