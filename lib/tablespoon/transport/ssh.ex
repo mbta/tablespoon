@@ -6,7 +6,7 @@ defmodule Tablespoon.Transport.SSH do
 
   ssh = SSH.new(host: host, username: username, password: password)
   {:ok. ssh} = SSH.connect(ssh)
-  {:ok, ssh} = SSH.request(ssh, "echo hello\n")
+  {:ok, ssh} = SSH.send(ssh, "echo hello\n")
   receive do
     x ->
       {:ok, ssh, results} = SSH.stream(ssh, x)
