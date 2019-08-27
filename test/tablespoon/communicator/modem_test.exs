@@ -2,9 +2,9 @@ defmodule Tablespoon.Communicator.ModemTest do
   @moduledoc false
   use ExUnit.Case, async: true
 
-  alias __MODULE__.FakeTransport
   alias Tablespoon.Communicator.Modem
   alias Tablespoon.Query
+  alias Tablespoon.Transport.Fake, as: FakeTransport
 
   describe "send/2" do
     test "sends a query and acknowledges" do
@@ -115,40 +115,5 @@ defmodule Tablespoon.Communicator.ModemTest do
           {:halt, other}
       end
     end)
-  end
-
-  defmodule FakeTransport do
-    @moduledoc false
-    @behaviour Tablespoon.Transport
-    defstruct connected?: false, sent: []
-
-    @impl Tablespoon.Transport
-    def new(_opts \\ []) do
-      %__MODULE__{}
-    end
-
-    @impl Tablespoon.Transport
-    def connect(fake) do
-      {:ok, %{fake | connected?: true}}
-    end
-
-    @impl Tablespoon.Transport
-    def send(%__MODULE__{connected?: true} = fake, iodata) do
-      binary = IO.iodata_to_binary(iodata)
-      {:ok, %{fake | sent: fake.sent ++ [binary]}}
-    end
-
-    def send(_fake, _) do
-      {:error, :not_connected}
-    end
-
-    @impl Tablespoon.Transport
-    def stream(%__MODULE__{connected?: true} = fake, binary) do
-      {:ok, fake, [data: binary]}
-    end
-
-    def stream(fake, _message) do
-      {:ok, fake, []}
-    end
   end
 end
