@@ -18,6 +18,18 @@ defmodule Tablespoon.Communicator do
   @callback send(t, Query.t()) :: {:ok, t, [result]} | {:error, error}
   @callback stream(t, term) :: {:ok, t, [result]} | {:error, error}
 
+  @doc """
+  The name of the Communicator, based on the struct.
+
+  iex> Communicator.name(Communicator.Modem.new(nil))
+  "Modem"
+  """
+  def name(%{__struct__: module}) do
+    module
+    |> Module.split()
+    |> List.last()
+  end
+
   def connect(%{__struct__: module} = comm) do
     module.connect(comm)
   end

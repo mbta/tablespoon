@@ -47,14 +47,38 @@ defmodule Tablespoon.IntersectionTest do
       log =
         capture_log(fn ->
           :ok = Intersection.send_query(query)
+          :ok = Intersection.flush(@alias)
+        end)
+
+      assert log =~ "Query - id=test_id alias=test_alias comm=Modem"
+      assert log =~ "type=cancel"
+      assert log =~ "v_id=vehicle_id"
+      assert log =~ "approach=south"
+      assert log =~ "event_time=1970-01-01T00:00:00Z"
+    end
+
+    test "logs the response" do
+      query =
+        Query.new(
+          id: "test_response_id",
+          type: :request,
+          intersection_alias: @alias,
+          approach: :north,
+          vehicle_id: "vehicle_id",
+          event_time: 0
+        )
+
+      log =
+        capture_log(fn ->
+          :ok = Intersection.send_query(query)
           Process.sleep(10)
           :ok = Intersection.flush(@alias)
         end)
 
-      assert log =~ "Query - id=test_id alias=test_alias"
-      assert log =~ "type=cancel"
+      assert log =~ "Response - id=test_id alias=test_alias comm=Modem"
+      assert log =~ "type=request"
       assert log =~ "v_id=vehicle_id"
-      assert log =~ "approach=south"
+      assert log =~ "approach=north"
       assert log =~ "event_time=1970-01-01T00:00:00Z"
       assert log =~ "processing_time_us="
     end
