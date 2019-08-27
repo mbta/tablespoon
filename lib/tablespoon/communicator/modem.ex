@@ -90,6 +90,16 @@ defmodule Tablespoon.Communicator.Modem do
     handle_buffer(comm, events)
   end
 
+  defp handle_stream_results(:closed, {:ok, comm, events}) do
+    case Transport.connect(comm.transport) do
+      {:ok, transport} ->
+        {:halt, {:ok, %{comm | transport: transport, buffer: ""}, events}}
+
+      e ->
+        {:halt, e}
+    end
+  end
+
   defp handle_buffer(comm, events) do
     case Line.decode(comm.buffer) do
       {:ok, line, rest} ->

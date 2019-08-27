@@ -116,4 +116,15 @@ defmodule Tablespoon.Communicator.ModemTest do
       end
     end)
   end
+
+  describe "stream/2" do
+    test "reconnects if the transport closes the connection" do
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, []} = Modem.stream(comm, "partial line")
+      {:ok, comm, []} = Modem.stream(comm, :close)
+      assert comm.buffer == ""
+      assert comm.transport.connect_count == 2
+    end
+  end
 end
