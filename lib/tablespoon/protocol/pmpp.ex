@@ -29,7 +29,7 @@ defmodule Tablespoon.Protocol.PMPP do
   @type t :: %__MODULE__{
           address: 0..255,
           control: :poll | :information_poll | :information,
-          body: binary
+          body: iodata
         }
   @type error :: :unknown | :too_short | :crc_failed
 
@@ -38,14 +38,18 @@ defmodule Tablespoon.Protocol.PMPP do
   @escaped_flag <<0x7D, 0x5E>>
   @escaped_escape <<0x7D, 0x5D>>
 
-  @doc "Encode a PMPP message to a binary"
-  @spec encode(t) :: binary
+  @doc "Encode a PMPP message to iodata"
+  @spec encode(t) :: iodata
   def encode(%__MODULE__{} = pmpp) do
     contents_to_crc =
-      <<pmpp.address::unsigned-integer-8, control_as_binary(pmpp.control), pmpp.body::binary>>
+      IO.iodata_to_binary([
+        <<pmpp.address::unsigned-integer-8>>,
+        control_as_binary(pmpp.control),
+        pmpp.body
+      ])
 
     crc = checksum(contents_to_crc)
-    IO.iodata_to_binary([@flag, replace_flag(contents_to_crc), replace_flag(crc), @flag])
+    [@flag, replace_flag(contents_to_crc), replace_flag(crc), @flag]
   end
 
   @doc "Decode a binary into a PMPP message and any extra data"

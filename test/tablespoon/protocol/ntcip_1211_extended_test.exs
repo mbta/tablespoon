@@ -7,7 +7,7 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
   describe "encode/decode" do
     property "returns the same value" do
       check all message <- gen_message() do
-        <<encoded::binary>> = NTCIP.encode(message)
+        encoded = IO.iodata_to_binary(NTCIP.encode(message))
         {:ok, decoded} = NTCIP.decode(encoded)
         assert message == decoded
       end
@@ -36,7 +36,7 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
 
   describe "encode/1" do
     test "encodes a message the same way the old software did" do
-      assert NTCIP.encode(@sample_message) == @encoded_sample
+      assert IO.iodata_to_binary(NTCIP.encode(@sample_message)) == @encoded_sample
     end
   end
 

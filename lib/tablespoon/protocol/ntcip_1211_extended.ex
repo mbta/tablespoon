@@ -142,14 +142,13 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   end
 
   @doc """
-  Encode a NTCIP 1211 message as a binary.
+  Encode a NTCIP 1211 message into iodata.
   """
-  @spec encode(t) :: binary
+  @spec encode(t) :: iodata
   def encode(%__MODULE__{} = message) do
     message
     |> as_snmp_pdu_message()
     |> :snmp_pdus.enc_message()
-    |> IO.iodata_to_binary()
   end
 
   @doc """

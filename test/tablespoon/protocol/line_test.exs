@@ -7,7 +7,7 @@ defmodule Tablespoon.Protocol.LineTest do
   describe "encode/decode" do
     property "returns the same binary" do
       check all contents <- contents() do
-        assert decode(encode(contents)) == {:ok, contents, ""}
+        assert decode(IO.iodata_to_binary(encode(contents))) == {:ok, contents, ""}
       end
     end
   end

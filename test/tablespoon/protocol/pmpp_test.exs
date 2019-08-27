@@ -9,7 +9,8 @@ defmodule Tablespoon.Protocol.PMPPTest do
       check all message <- gen_message(),
                 extra <- StreamData.binary() do
         encoded = PMPP.encode(message)
-        assert {:ok, ^message, ^extra} = PMPP.decode(encoded <> extra)
+        binary = IO.iodata_to_binary([encoded, extra])
+        assert {:ok, ^message, ^extra} = PMPP.decode(binary)
       end
     end
   end
@@ -23,7 +24,12 @@ defmodule Tablespoon.Protocol.PMPPTest do
 
   describe "encode/1" do
     test "properly encodes a message" do
-      assert PMPP.encode(@message) == @encoded
+      assert IO.iodata_to_binary(PMPP.encode(@message)) == @encoded
+    end
+
+    test "properly encodes a message with an iodata body" do
+      message = %{@message | body: [@message.body]}
+      assert IO.iodata_to_binary(PMPP.encode(message)) == @encoded
     end
 
     test "properly encodes a message from the old software" do
@@ -47,7 +53,7 @@ defmodule Tablespoon.Protocol.PMPPTest do
           0xF1, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
           0x33, 0x38, 0x32, 0x35, 0x02, 0x00, 0x02, 0x09, 0x09, 0x7E>>
 
-      assert PMPP.encode(message) == expected
+      assert IO.iodata_to_binary(PMPP.encode(message)) == expected
     end
   end
 
