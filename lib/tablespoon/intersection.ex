@@ -44,7 +44,9 @@ defmodule Tablespoon.Intersection do
   @impl GenServer
   def init(config) do
     Logger.info(fn ->
-      "started Intersection id=#{config.id} alias=#{config.alias}"
+      "started Intersection id=#{config.id} alias=#{config.alias} communicator=#{
+        config.communicator.__struct__
+      }"
     end)
 
     {:ok, %__MODULE__{config: config}, config.warning_timeout_ms}

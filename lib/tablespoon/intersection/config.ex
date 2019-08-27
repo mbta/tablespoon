@@ -2,16 +2,18 @@ defmodule Tablespoon.Intersection.Config do
   @moduledoc """
   Configuration options for Intersections.
   """
-  @enforce_keys [:id, :alias]
-  defstruct [
-    :id,
-    :alias,
-    name: nil,
-    active?: true,
-    warning_timeout_ms: :infinity,
-    warning_not_before_time: {24, 0, 0},
-    warning_not_after_time: {0, 0, 0}
-  ]
+
+  alias Tablespoon.{Communicator, Transport}
+
+  @enforce_keys [:id, :alias, :communicator]
+  defstruct @enforce_keys ++
+              [
+                name: nil,
+                active?: true,
+                warning_timeout_ms: :infinity,
+                warning_not_before_time: {24, 0, 0},
+                warning_not_after_time: {0, 0, 0}
+              ]
 
   @doc "Parse a JSON object into a Config"
   def from_json(map) do
@@ -41,7 +43,8 @@ defmodule Tablespoon.Intersection.Config do
       active?: active?,
       warning_timeout_ms: warning_timeout_ms,
       warning_not_before_time: warning_not_before,
-      warning_not_after_time: warning_not_after
+      warning_not_after_time: warning_not_after,
+      communicator: communicator(map)
     }
   end
 
@@ -51,5 +54,18 @@ defmodule Tablespoon.Intersection.Config do
       String.to_integer(minute_binary),
       String.to_integer(second_binary)
     }
+  end
+
+  defp communicator(%{"communicationType" => "Btd", "intersectionId" => intersection_id}) do
+    Communicator.Btd.new(
+      Transport.FakeBtd.new(),
+      group: "fake_group",
+      address: 1,
+      intersection_id: intersection_id
+    )
+  end
+
+  defp communicator(%{"communicationType" => "Modem"}) do
+    Communicator.Modem.new(Transport.FakeModem.new())
   end
 end

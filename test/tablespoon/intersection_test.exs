@@ -1,7 +1,9 @@
 defmodule Tablespoon.IntersectionTest do
   @moduledoc false
   use ExUnit.Case
+  alias Tablespoon.Communicator.Modem
   alias Tablespoon.{Intersection, Intersection.Config, Query}
+  alias Tablespoon.Transport.FakeModem
   import ExUnit.CaptureLog
 
   @alias "test_alias"
@@ -10,7 +12,8 @@ defmodule Tablespoon.IntersectionTest do
     alias: @alias,
     warning_timeout_ms: 60_000,
     warning_not_before_time: {7, 0, 0},
-    warning_not_after_time: {23, 0, 0}
+    warning_not_after_time: {23, 0, 0},
+    communicator: Modem.new(FakeModem.new())
   }
 
   setup do
