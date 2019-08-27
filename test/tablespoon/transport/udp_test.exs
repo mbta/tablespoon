@@ -25,7 +25,7 @@ defmodule Tablespoon.Transport.UDPTest do
 
     test "returns an error if we can't send to the port" do
       {:ok, udp} = UDP.connect(UDP.new(host: @localhost, port: 0))
-      assert {:error, :eaddrnotavail} = UDP.send(udp, "packet")
+      assert {:error, _} = UDP.send(udp, "packet")
     end
   end
 
