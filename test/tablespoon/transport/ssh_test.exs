@@ -15,6 +15,7 @@ defmodule Tablespoon.Transport.SSHTest do
       assert {:error, _} = SSH.connect(ssh)
     end
 
+    @tag :slow
     test "returns {:ok, term} for a good connection" do
       ssh = new_test()
       assert {:ok, %SSH{}} = SSH.connect(ssh)
