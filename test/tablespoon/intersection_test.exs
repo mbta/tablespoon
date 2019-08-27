@@ -47,6 +47,7 @@ defmodule Tablespoon.IntersectionTest do
       log =
         capture_log(fn ->
           :ok = Intersection.send_query(query)
+          Process.sleep(10)
           :ok = Intersection.flush(@alias)
         end)
 

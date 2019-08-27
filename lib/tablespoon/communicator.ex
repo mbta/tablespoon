@@ -8,11 +8,25 @@ defmodule Tablespoon.Communicator do
   request succeeded or failed.
   """
 
+  alias Tablespoon.{Query, Transport}
+
   @type t :: struct
   @type error :: term
-  @type result :: {:sent, Tablespoon.Query.t()} | {:failed, Tablespoon.Query.t(), error}
-  @callback new(Tablespoon.Transport.t(), Keyword.t()) :: t
+  @type result :: {:sent, Query.t()} | {:failed, Query.t(), error}
+  @callback new(Transport.t(), Keyword.t()) :: t
   @callback connect(t) :: {:ok, t} | {:error, error}
-  @callback send(t, Tablespoon.Query.t()) :: {:ok, t, [result]} | {:error, error}
+  @callback send(t, Query.t()) :: {:ok, t, [result]} | {:error, error}
   @callback stream(t, term) :: {:ok, t, [result]} | {:error, error}
+
+  def connect(%{__struct__: module} = comm) do
+    module.connect(comm)
+  end
+
+  def send(%{__struct__: module} = comm, %Query{} = q) do
+    module.send(comm, q)
+  end
+
+  def stream(%{__struct__: module} = comm, message) do
+    module.stream(comm, message)
+  end
 end

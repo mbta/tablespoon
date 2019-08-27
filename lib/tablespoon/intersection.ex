@@ -4,7 +4,7 @@ defmodule Tablespoon.Intersection do
   """
   use GenServer
   require Logger
-  alias Tablespoon.Query
+  alias Tablespoon.{Communicator, Query}
 
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.alias))
@@ -20,9 +20,14 @@ defmodule Tablespoon.Intersection do
   @doc "For testing only: ensures the messages have been processed"
   @spec flush(Query.intersection_alias()) :: :ok
   def flush(intersection_alias) do
-    intersection_alias
-    |> name
-    |> GenServer.call(:flush)
+    if intersection_alias
+       |> name
+       |> GenServer.call(:flush) == {:ok, 0} do
+      :ok
+    else
+      Process.sleep(1)
+      flush(intersection_alias)
+    end
   end
 
   def child_spec(config) do
@@ -43,6 +48,9 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def init(config) do
+    {:ok, communicator} = Communicator.connect(config.communicator)
+    config = %{config | communicator: communicator}
+
     Logger.info(fn ->
       "started Intersection id=#{config.id} alias=#{config.alias} communicator=#{
         config.communicator.__struct__
@@ -54,19 +62,10 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def handle_cast({:query, q}, %{config: config} = state) do
-    Logger.info(fn ->
-      event_time_iso =
-        q.event_time
-        |> DateTime.from_unix!(:native)
-        |> DateTime.truncate(:second)
-        |> DateTime.to_iso8601()
-
-      processing_time = Query.processing_time(q, :microsecond)
-
-      "Query - id=#{config.id} alias=#{config.alias} type=#{q.type} v_id=#{q.vehicle_id} approach=#{
-        q.approach
-      } event_time=#{event_time_iso} processing_time_us=#{processing_time}"
-    end)
+    {:ok, communicator, results} = Communicator.send(config.communicator, q)
+    config = %{config | communicator: communicator}
+    config = Enum.reduce(results, config, &handle_results/2)
+    state = %{state | config: config}
 
     {:noreply, state, config.warning_timeout_ms}
   end
@@ -77,7 +76,8 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def handle_call(:flush, _from, state) do
-    {:reply, :ok, state}
+    {:message_queue_len, len} = Process.info(self(), :message_queue_len)
+    {:reply, {:ok, len}, state}
   end
 
   def handle_call(message, from, state) do
@@ -106,7 +106,34 @@ defmodule Tablespoon.Intersection do
     {:noreply, state, config.warning_timeout_ms}
   end
 
-  def handle_info(message, state) do
-    super(message, state)
+  def handle_info(message, %{config: config} = state) do
+    case Communicator.stream(config.communicator, message) do
+      {:ok, communicator, results} ->
+        config = %{config | communicator: communicator}
+        config = Enum.reduce(results, config, &handle_results/2)
+        state = %{state | config: config}
+        {:noreply, state, config.warning_timeout_ms}
+
+      :unknown ->
+        super(message, state)
+    end
+  end
+
+  def handle_results({:sent, q}, config) do
+    Logger.info(fn ->
+      event_time_iso =
+        q.event_time
+        |> DateTime.from_unix!(:native)
+        |> DateTime.truncate(:second)
+        |> DateTime.to_iso8601()
+
+      processing_time = Query.processing_time(q, :microsecond)
+
+      "Query - id=#{config.id} alias=#{config.alias} type=#{q.type} v_id=#{q.vehicle_id} approach=#{
+        q.approach
+      } event_time=#{event_time_iso} processing_time_us=#{processing_time}"
+    end)
+
+    config
   end
 end
