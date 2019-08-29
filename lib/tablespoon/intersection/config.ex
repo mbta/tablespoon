@@ -3,7 +3,7 @@ defmodule Tablespoon.Intersection.Config do
   Configuration options for Intersections.
   """
 
-  alias Tablespoon.{Communicator, Transport}
+  alias Tablespoon.Communicator
 
   @enforce_keys [:id, :alias, :communicator]
   defstruct @enforce_keys ++
@@ -57,15 +57,28 @@ defmodule Tablespoon.Intersection.Config do
   end
 
   defp communicator(%{"communicationType" => "Btd", "intersectionId" => intersection_id}) do
+    config = Application.get_env(:tablespoon, Communicator.Btd)
+    {transport, transport_opts} = config[:transport]
+
     Communicator.Btd.new(
-      Transport.FakeBtd.new(),
-      group: "fake_group",
-      address: 1,
+      transport.new(transport_opts),
+      group: config[:group],
+      address: config[:address],
       intersection_id: intersection_id
     )
   end
 
-  defp communicator(%{"communicationType" => "Modem"}) do
-    Communicator.Modem.new(Transport.FakeModem.new())
+  defp communicator(%{"communicationType" => "Modem"} = map) do
+    config = Application.get_env(:tablespoon, Communicator.Modem)
+    transport = config[:transport]
+
+    Communicator.Modem.new(
+      transport.new(
+        host: map["ipAddress"],
+        port: map["port"],
+        username: map["userName"],
+        password: map["password"]
+      )
+    )
   end
 end
