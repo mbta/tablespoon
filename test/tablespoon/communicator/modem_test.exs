@@ -1,6 +1,7 @@
 defmodule Tablespoon.Communicator.ModemTest do
   @moduledoc false
   use ExUnit.Case, async: true
+  use ExUnitProperties
 
   alias Tablespoon.Communicator.Modem
   alias Tablespoon.Query
@@ -126,5 +127,68 @@ defmodule Tablespoon.Communicator.ModemTest do
       assert comm.buffer == ""
       assert comm.transport.connect_count == 2
     end
+
+    property "always returns sent or failed for a query" do
+      check all query_responses <- list_of(query_response(), min_length: 1) do
+        comm = Modem.new(FakeTransport.new())
+        {:ok, comm} = Modem.connect(comm)
+        {:ok, comm, []} = Modem.stream(comm, "OK\n")
+
+        {:ok, _comm, events} =
+          Enum.reduce(query_responses, {:ok, comm, []}, fn {query, response},
+                                                           {:ok, comm, events} ->
+            sent_before = comm.transport.sent
+            {:ok, comm, new_events} = Modem.send(comm, query)
+
+            {:ok, comm, new_events} =
+              if sent_before != comm.transport.sent do
+                process_data(comm, response, new_events)
+              else
+                # if there were too many requests w/o a cancel, then we don't
+                # send anything and don't get any new events
+                {:ok, comm, new_events}
+              end
+
+            {:ok, comm, events ++ new_events}
+          end)
+
+        assert length(events) == length(query_responses)
+
+        for {{query, _response}, event} <- Enum.zip(query_responses, events) do
+          assert elem(event, 0) in [:sent, :failed]
+          assert elem(event, 1) == query
+        end
+      end
+    end
+  end
+
+  defp query_response do
+    tuple({
+      query(),
+      response()
+    })
+  end
+
+  defp query do
+    gen all type <- one_of([:request, :cancel]),
+            approach <- one_of([:north, :east, :south, :west]) do
+      Query.new(
+        id: 1,
+        type: type,
+        vehicle_id: "1",
+        intersection_alias: "int",
+        approach: approach,
+        event_time: System.system_time()
+      )
+    end
+  end
+
+  def response do
+    one_of([
+      constant(["OK\n"]),
+      constant(["ERROR\n"]),
+      constant(["unknown\n"]),
+      constant([:close, "OK\n"])
+    ])
   end
 end
