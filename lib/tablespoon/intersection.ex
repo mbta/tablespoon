@@ -73,7 +73,9 @@ defmodule Tablespoon.Intersection do
 
       "Query - id=#{config.id} alias=#{config.alias} comm=#{
         Communicator.name(config.communicator)
-      } type=#{q.type} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso}"
+      } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
+        event_time_iso
+      }"
     end)
 
     config = %{config | communicator: communicator}
@@ -144,9 +146,9 @@ defmodule Tablespoon.Intersection do
 
       "Response - id=#{config.id} alias=#{config.alias} comm=#{
         Communicator.name(config.communicator)
-      } type=#{q.type} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} processing_time_us=#{
-        processing_time
-      }"
+      } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
+        event_time_iso
+      } processing_time_us=#{processing_time}"
     end)
 
     config

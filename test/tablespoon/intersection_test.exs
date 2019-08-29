@@ -55,6 +55,7 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "v_id=vehicle_id"
       assert log =~ "approach=south"
       assert log =~ "event_time=1970-01-01T00:00:00Z"
+      assert log =~ "test_query_id"
     end
 
     test "logs the response" do
@@ -81,6 +82,7 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "approach=north"
       assert log =~ "event_time=1970-01-01T00:00:00Z"
       assert log =~ "processing_time_us="
+      assert log =~ "test_response_id"
     end
   end
 
