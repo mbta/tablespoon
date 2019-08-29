@@ -47,7 +47,9 @@ defmodule Tablespoon.MixProject do
       {:excoveralls, "~> 0.11", only: [:test], runtime: false},
       {:stream_data, "~> 0.4.3", only: [:test]},
       {:dialyxir, "~> 1.0.0-rc", only: [:dev, :test], runtime: false},
-      {:logger_splunk_backend, github: "paulswartz/logger_splunk_backend", only: [:prod]}
+      {:logger_splunk_backend, github: "paulswartz/logger_splunk_backend", only: [:prod]},
+      {:logster, "~> 1.0"},
+      {:ehmon, github: "mbta/ehmon", branch: "master", only: [:prod]}
     ]
   end
 end

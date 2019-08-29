@@ -18,4 +18,6 @@ config :logger, :splunk,
   metadata: [:request_id],
   level: :info
 
+config :ehmon, :report_mf, {:ehmon, :info_report}
+
 import_config "prod.secret.exs"
