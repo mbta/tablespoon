@@ -177,6 +177,9 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
        request_id: request_id,
        message: struct.decode_from_varbind(IO.iodata_to_binary(varbind_list))
      }}
+  rescue
+    _e in [MatchError, FunctionClauseError] ->
+      {:error, :invalid}
   catch
     :exit, _reason ->
       {:error, :invalid}

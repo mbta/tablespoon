@@ -48,6 +48,12 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
     test "fails if there's not enough data" do
       assert NTCIP.decode(:binary.part(@encoded_sample, 0, 20)) == {:error, :invalid}
     end
+
+    property "does not crash when receiving invalid packets" do
+      check all packet <- modified_packet(@encoded_sample) do
+        NTCIP.decode(packet)
+      end
+    end
   end
 
   def gen_message do
@@ -102,4 +108,23 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
   def strategy, do: StreamData.integer(1..255)
   def time, do: StreamData.integer(1..65_535)
   def intersection_id, do: StreamData.integer(1..65_535)
+
+  def modified_packet(packet) do
+    sized(fn size ->
+      packet = packet_modifications(:binary.bin_to_list(packet), byte_size(packet), size)
+      map(packet, &IO.iodata_to_binary/1)
+    end)
+  end
+
+  def packet_modifications(packet, _byte_size, 0) do
+    constant(packet)
+  end
+
+  def packet_modifications(packet, byte_size, remaining) do
+    gen all index <- integer(0..(byte_size - 1)),
+            replacement <- list_of(integer(0..255)),
+            packet <- packet_modifications(packet, byte_size, remaining - 1) do
+      List.replace_at(packet, index, replacement)
+    end
+  end
 end
