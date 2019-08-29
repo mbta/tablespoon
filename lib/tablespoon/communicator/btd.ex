@@ -24,12 +24,12 @@ defmodule Tablespoon.Communicator.Btd do
 
   require Logger
 
-  @enforce_keys [:transport, :address, :group, :intersection_id]
-  defstruct @enforce_keys ++ [next_id: 1, in_flight: %{}]
+  @enforce_keys [:transport, :address, :group, :intersection_id, :ref]
+  defstruct @enforce_keys ++ [timeout: 5_000, next_id: 1, in_flight: %{}]
 
   @impl Tablespoon.Communicator
   def new(transport, opts) do
-    struct!(__MODULE__, [transport: transport] ++ opts)
+    struct!(__MODULE__, [transport: transport, ref: make_ref()] ++ opts)
   end
 
   @impl Tablespoon.Communicator
@@ -52,7 +52,9 @@ defmodule Tablespoon.Communicator.Btd do
     pmpp = PMPP.encode(%PMPP{address: comm.address, control: :information_poll, body: ntcip})
 
     with {:ok, transport} <- Transport.send(comm.transport, pmpp) do
-      in_flight = Map.put(comm.in_flight, comm.next_id, q)
+      # send ourselves a message to bail out if we don't get a response
+      timer = send_after(self(), {comm.ref, :timeout, comm.next_id, q}, comm.timeout)
+      in_flight = Map.put(comm.in_flight, comm.next_id, {q, timer})
 
       {:ok, %{comm | next_id: next_id(comm.next_id), in_flight: in_flight, transport: transport},
        []}
@@ -60,6 +62,23 @@ defmodule Tablespoon.Communicator.Btd do
   end
 
   @impl Tablespoon.Communicator
+  def stream(%__MODULE__{ref: ref} = comm, {ref, :timeout, id, q}) do
+    case Map.get(comm.in_flight, id) do
+      {^q, _} ->
+        in_flight = Map.delete(comm.in_flight, id)
+        comm = %{comm | in_flight: in_flight}
+        {:ok, comm, [{:failed, q, :timeout}]}
+
+      _ ->
+        :unknown
+    end
+  end
+
+  def stream(%__MODULE__{}, {ref, :timeout, _id, _}) when is_reference(ref) do
+    # timeout from an earlier version of this connection
+    :unknown
+  end
+
   def stream(%__MODULE__{} = comm, message) do
     with {:ok, transport, results} <- Transport.stream(comm.transport, message) do
       comm = %{comm | transport: transport}
@@ -116,14 +135,32 @@ defmodule Tablespoon.Communicator.Btd do
   end
 
   defp handle_stream_results({:data, binary}, {:ok, comm, events}) do
-    {:ok, pmpp, ""} = PMPP.decode(binary)
-    handle_pmpp(comm, pmpp, events)
+    case PMPP.decode(binary) do
+      {:ok, pmpp, ""} ->
+        handle_pmpp(comm, pmpp, events)
+
+      {:error, e, _} ->
+        Logger.warn(fn ->
+          "unexpected error decoding PMPP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
+            inspect(binary)
+          }"
+        end)
+
+        {:cont, {:ok, comm, events}}
+    end
   end
 
   defp handle_stream_results(:closed, {:ok, comm, events}) do
     case Transport.connect(comm.transport) do
       {:ok, transport} ->
-        {:halt, {:ok, %{comm | transport: transport}, events}}
+        failed =
+          for {q, timer} <- Map.values(comm.in_flight) do
+            Process.cancel_timer(timer)
+            {:failed, q, :closed}
+          end
+
+        comm = %{comm | transport: transport, ref: make_ref(), next_id: 1, in_flight: %{}}
+        {:halt, {:ok, %{comm | transport: transport}, events ++ failed}}
 
       e ->
         {:halt, e}
@@ -131,14 +168,61 @@ defmodule Tablespoon.Communicator.Btd do
   end
 
   defp handle_pmpp(%{address: address} = comm, %{address: address} = pmpp, events) do
-    {:ok, ntcip} = NTCIP.decode(pmpp.body)
-    handle_nctip(comm, ntcip, events)
+    case NTCIP.decode(pmpp.body) do
+      {:ok, ntcip} ->
+        handle_nctip(comm, ntcip, events)
+
+      {:error, e} ->
+        Logger.warn(fn ->
+          "unexpected error decoding NTCIP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
+            inspect(pmpp.body)
+          }"
+        end)
+
+        {:cont, {:ok, comm, events}}
+    end
+  end
+
+  defp handle_pmpp(comm, pmpp, events) do
+    Logger.warn(fn ->
+      "unexpected PMPP message comm=#{inspect(comm)} message=#{inspect(pmpp)}"
+    end)
+
+    {:cont, {:ok, comm, events}}
   end
 
   defp handle_nctip(%{group: group} = comm, %{group: group, pdu_type: :response} = ntcip, events) do
-    {query, in_flight} = Map.pop(comm.in_flight, ntcip.message.id)
-    events = [sent: query] ++ events
-    comm = %{comm | in_flight: in_flight}
+    case Map.pop(comm.in_flight, ntcip.message.id) do
+      {nil, _} ->
+        Logger.warn(fn ->
+          "unexpected response for message comm=#{inspect(comm)} message=#{ntcip}"
+        end)
+
+        {:cont, {:ok, comm, events}}
+
+      {{query, timer}, in_flight} ->
+        Process.cancel_timer(timer)
+        events = [sent: query] ++ events
+        comm = %{comm | in_flight: in_flight}
+        {:cont, {:ok, comm, events}}
+    end
+  end
+
+  defp handle_nctip(comm, ntcip, events) do
+    Logger.warn(fn ->
+      "unexpected NTCIP1211 message comm=#{inspect(comm)} message=#{inspect(ntcip)}"
+    end)
+
     {:cont, {:ok, comm, events}}
+  end
+
+  defp send_after(pid, message, 0) do
+    Kernel.send(pid, message)
+    # fake timer
+    make_ref()
+  end
+
+  defp send_after(pid, message, after_time) do
+    Process.send_after(pid, message, after_time)
   end
 end

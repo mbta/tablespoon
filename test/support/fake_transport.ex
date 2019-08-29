@@ -28,6 +28,10 @@ defmodule Tablespoon.Transport.Fake do
     {:ok, fake, [:closed]}
   end
 
+  def stream(%__MODULE__{connect_count: count} = fake, :empty) when count > 0 do
+    {:ok, fake, []}
+  end
+
   def stream(%__MODULE__{connect_count: count} = fake, iodata) when count > 0 do
     {:ok, fake, [data: IO.iodata_to_binary(iodata)]}
   end
