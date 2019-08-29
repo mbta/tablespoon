@@ -8,3 +8,8 @@ config :tablespoon, TablespoonWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger, level: :warn
+
+# Configure StreamData to use more rounds in CI
+if System.get_env("CI") do
+  config :stream_data, max_runs: 500
+end
