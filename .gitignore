@@ -24,3 +24,6 @@ tablespoon-*.tar
 
 # Intersection configuration
 /priv/intersections.json
+
+# Secret configuration
+/config/*secret.exs

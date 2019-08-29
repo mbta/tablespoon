@@ -17,3 +17,5 @@ config :logger, :splunk,
   format: "[$level]$levelpad $metadata$message",
   metadata: [:request_id],
   level: :info
+
+import_config "prod.secret.exs"
