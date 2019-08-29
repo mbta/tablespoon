@@ -68,7 +68,8 @@ defmodule Tablespoon.Protocol.PMPP do
     {:error, :unknown, binary}
   end
 
-  defp do_decode(rest, extra) do
+  # must have at least two bytes for the address and controll, plus two bytes for the CRC
+  defp do_decode(rest, extra) when byte_size(rest) >= 4 do
     rest = unreplace_flag(rest)
     rest_size = byte_size(rest)
     crc = :binary.part(rest, rest_size, -2)
@@ -87,6 +88,10 @@ defmodule Tablespoon.Protocol.PMPP do
     else
       {:error, :crc_failed, extra}
     end
+  end
+
+  defp do_decode(_rest, extra) do
+    {:error, :invalid, extra}
   end
 
   for {control, value} <- [poll: 0x33, information_poll: 0x13, information: 0x03] do

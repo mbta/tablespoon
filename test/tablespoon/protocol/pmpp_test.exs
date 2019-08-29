@@ -62,6 +62,11 @@ defmodule Tablespoon.Protocol.PMPPTest do
       assert PMPP.decode(@encoded) == {:ok, @message, ""}
     end
 
+    test "fails on a too small message" do
+      assert PMPP.decode(<<0x7E, 0x7E, "extra">>) == {:error, :invalid, "extra"}
+      assert PMPP.decode(<<0x7E, 0x00, 0x7E, "extra">>) == {:error, :invalid, "extra"}
+    end
+
     test "modifying an internal byte fails to decode with a :crc_failed error" do
       replaced = :binary.replace(@encoded, "x", "y")
       assert PMPP.decode(replaced <> "extra") == {:error, :crc_failed, "extra"}
@@ -71,6 +76,12 @@ defmodule Tablespoon.Protocol.PMPPTest do
       short = :binary.part(@encoded, 0, 3)
       assert PMPP.decode(short) == {:error, :too_short, short}
     end
+
+    property "does not crash on any input" do
+      check all data <- gen_body() do
+        PMPP.decode(data)
+      end
+    end
   end
 
   def gen_message do
@@ -78,25 +89,28 @@ defmodule Tablespoon.Protocol.PMPPTest do
 
     control =
       [:poll, :information_poll, :information_poll]
-      |> Enum.map(&StreamData.constant/1)
-      |> StreamData.one_of()
+      |> Enum.map(&constant/1)
+      |> one_of()
 
+    gen all address <- address,
+            control <- control,
+            body <- gen_body() do
+      %PMPP{
+        address: address,
+        control: control,
+        body: body
+      }
+    end
+  end
+
+  def gen_body do
     # ensure we include bytes which need to be escaped
-    body =
-      [
-        {5, StreamData.binary()},
-        {1, StreamData.constant(0x7E)},
-        {1, StreamData.constant(0x7D)}
-      ]
-      |> StreamData.frequency()
-      |> StreamData.list_of()
-      |> StreamData.map(&IO.iodata_to_binary/1)
-
-    StreamData.fixed_map(%{
-      __struct__: StreamData.constant(PMPP),
-      address: address,
-      control: control,
-      body: body
-    })
+    [
+      {1, one_of([constant(0x7E), constant(0x7D)])},
+      {5, binary()}
+    ]
+    |> frequency()
+    |> list_of()
+    |> map(&IO.iodata_to_binary/1)
   end
 end
