@@ -22,16 +22,7 @@ defmodule Tablespoon.IntersectionTest do
   end
 
   describe "send_query/1" do
-    setup do
-      log_level = Logger.level()
-
-      on_exit(fn ->
-        Logger.configure(level: log_level)
-      end)
-
-      Logger.configure(level: :info)
-      :ok
-    end
+    setup :log_level_info
 
     test "logs the query" do
       query =
@@ -125,5 +116,46 @@ defmodule Tablespoon.IntersectionTest do
 
       assert log == ""
     end
+  end
+
+  describe "handle_results/2" do
+    setup :log_level_info
+
+    test "logs a failure response" do
+      query =
+        Query.new(
+          id: "test_failure_id",
+          type: :request,
+          intersection_alias: @alias,
+          approach: :north,
+          vehicle_id: "vehicle_id",
+          event_time: 0
+        )
+
+      log =
+        capture_log(fn ->
+          Intersection.handle_results({:failed, query, :test_error}, @config)
+        end)
+
+      assert log =~ "Failure - id=test_id alias=test_alias comm=Modem"
+      assert log =~ "type=request"
+      assert log =~ "v_id=vehicle_id"
+      assert log =~ "approach=north"
+      assert log =~ "event_time=1970-01-01T00:00:00Z"
+      assert log =~ "processing_time_us="
+      assert log =~ "test_failure_id"
+      assert log =~ "error=:test_error"
+    end
+  end
+
+  defp log_level_info(_) do
+    log_level = Logger.level()
+
+    on_exit(fn ->
+      Logger.configure(level: log_level)
+    end)
+
+    Logger.configure(level: :info)
+    :ok
   end
 end

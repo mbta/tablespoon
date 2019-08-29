@@ -153,4 +153,24 @@ defmodule Tablespoon.Intersection do
 
     config
   end
+
+  def handle_results({:failed, q, error}, config) do
+    Logger.info(fn ->
+      event_time_iso =
+        q.event_time
+        |> DateTime.from_unix!(:native)
+        |> DateTime.truncate(:second)
+        |> DateTime.to_iso8601()
+
+      processing_time = Query.processing_time(q, :microsecond)
+
+      "Failure - id=#{config.id} alias=#{config.alias} comm=#{
+        Communicator.name(config.communicator)
+      } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
+        event_time_iso
+      } processing_time_us=#{processing_time} error=#{inspect(error)}"
+    end)
+
+    config
+  end
 end
