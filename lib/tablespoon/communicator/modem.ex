@@ -67,10 +67,16 @@ defmodule Tablespoon.Communicator.Modem do
         |> query_iodata()
         |> Line.encode()
 
-      queue = :queue.in(q, comm.queue)
+      case Transport.send(comm.transport, data) do
+        {:ok, transport} ->
+          queue = :queue.in(q, comm.queue)
 
-      {:ok, transport} = Transport.send(comm.transport, data)
-      {:ok, %{comm | transport: transport, queue: queue, approach_counts: approach_counts}, []}
+          {:ok, %{comm | transport: transport, queue: queue, approach_counts: approach_counts},
+           []}
+
+        {:error, e} ->
+          {:ok, comm, [{:failed, q, e}]}
+      end
     else
       # ignoring an extra cancel
       {:ok, %{comm | approach_counts: approach_counts}, [sent: q]}
