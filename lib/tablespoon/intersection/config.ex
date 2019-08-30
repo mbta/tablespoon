@@ -5,6 +5,17 @@ defmodule Tablespoon.Intersection.Config do
 
   alias Tablespoon.Communicator
 
+  @type t :: %__MODULE__{
+          id: term(),
+          alias: String.t(),
+          communicator: Communicator.t(),
+          name: String.t() | nil,
+          active?: boolean,
+          warning_timeout_ms: non_neg_integer | :infinity,
+          warning_not_before_time: :calendar.time() | {24, 0, 0},
+          warning_not_before_time: :calendar.time()
+        }
+
   @enforce_keys [:id, :alias, :communicator]
   defstruct @enforce_keys ++
               [

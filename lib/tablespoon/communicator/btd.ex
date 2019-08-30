@@ -156,7 +156,7 @@ defmodule Tablespoon.Communicator.Btd do
       {:ok, transport} ->
         failed =
           for {q, timer} <- Map.values(comm.in_flight) do
-            Process.cancel_timer(timer)
+            _ = Process.cancel_timer(timer)
             {:failed, q, :closed}
           end
 
@@ -205,7 +205,7 @@ defmodule Tablespoon.Communicator.Btd do
         {:cont, {:ok, comm, events}}
 
       {{query, timer}, in_flight} ->
-        Process.cancel_timer(timer)
+        _ = Process.cancel_timer(timer)
         events = [sent: query] ++ events
         comm = %{comm | in_flight: in_flight}
         {:cont, {:ok, comm, events}}

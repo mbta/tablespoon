@@ -4,6 +4,7 @@ defmodule Tablespoon.Intersection do
   """
   use GenServer
   require Logger
+  alias __MODULE__.Config
   alias Tablespoon.{Communicator, Query}
 
   def start_link(config) do
@@ -137,6 +138,7 @@ defmodule Tablespoon.Intersection do
     end
   end
 
+  @spec handle_results(Communicator.result(), Config.t()) :: Config.t()
   def handle_results({:sent, q}, config) do
     _ =
       Logger.info(fn ->

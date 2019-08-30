@@ -16,6 +16,14 @@ defmodule Tablespoon.MixProject do
       ],
       test_coverage: [
         tool: ExCoveralls
+      ],
+      dialyzer: [
+        plt_add_deps: :transitive,
+        flags: [
+          :error_handling,
+          :race_conditions,
+          :unmatched_returns
+        ]
       ]
     ]
   end
