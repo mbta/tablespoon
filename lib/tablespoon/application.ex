@@ -40,9 +40,10 @@ defmodule Tablespoon.Application do
         |> Enum.map(&Config.from_json/1)
 
       {:error, e} ->
-        Logger.warn(fn ->
-          "unable to read intersection configuration: #{inspect(e)}"
-        end)
+        _ =
+          Logger.warn(fn ->
+            "unable to read intersection configuration: #{inspect(e)}"
+          end)
 
         []
     end

@@ -140,11 +140,12 @@ defmodule Tablespoon.Communicator.Btd do
         handle_pmpp(comm, pmpp, events)
 
       {:error, e, _} ->
-        Logger.warn(fn ->
-          "unexpected error decoding PMPP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
-            inspect(binary)
-          }"
-        end)
+        _ =
+          Logger.warn(fn ->
+            "unexpected error decoding PMPP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
+              inspect(binary)
+            }"
+          end)
 
         {:cont, {:ok, comm, events}}
     end
@@ -173,20 +174,22 @@ defmodule Tablespoon.Communicator.Btd do
         handle_nctip(comm, ntcip, events)
 
       {:error, e} ->
-        Logger.warn(fn ->
-          "unexpected error decoding NTCIP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
-            inspect(pmpp.body)
-          }"
-        end)
+        _ =
+          Logger.warn(fn ->
+            "unexpected error decoding NTCIP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
+              inspect(pmpp.body)
+            }"
+          end)
 
         {:cont, {:ok, comm, events}}
     end
   end
 
   defp handle_pmpp(comm, pmpp, events) do
-    Logger.warn(fn ->
-      "unexpected PMPP message comm=#{inspect(comm)} message=#{inspect(pmpp)}"
-    end)
+    _ =
+      Logger.warn(fn ->
+        "unexpected PMPP message comm=#{inspect(comm)} message=#{inspect(pmpp)}"
+      end)
 
     {:cont, {:ok, comm, events}}
   end
@@ -194,9 +197,10 @@ defmodule Tablespoon.Communicator.Btd do
   defp handle_nctip(%{group: group} = comm, %{group: group, pdu_type: :response} = ntcip, events) do
     case Map.pop(comm.in_flight, ntcip.message.id) do
       {nil, _} ->
-        Logger.warn(fn ->
-          "unexpected response for message comm=#{inspect(comm)} message=#{ntcip}"
-        end)
+        _ =
+          Logger.warn(fn ->
+            "unexpected response for message comm=#{inspect(comm)} message=#{ntcip}"
+          end)
 
         {:cont, {:ok, comm, events}}
 
@@ -209,9 +213,10 @@ defmodule Tablespoon.Communicator.Btd do
   end
 
   defp handle_nctip(comm, ntcip, events) do
-    Logger.warn(fn ->
-      "unexpected NTCIP1211 message comm=#{inspect(comm)} message=#{inspect(ntcip)}"
-    end)
+    _ =
+      Logger.warn(fn ->
+        "unexpected NTCIP1211 message comm=#{inspect(comm)} message=#{inspect(ntcip)}"
+      end)
 
     {:cont, {:ok, comm, events}}
   end

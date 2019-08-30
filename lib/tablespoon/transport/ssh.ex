@@ -97,9 +97,10 @@ defmodule Tablespoon.Transport.SSH do
 
   def stream(%__MODULE__{conn_ref: conn_ref} = ssh, {:ssh_cm, conn_ref, message}) do
     # This is a message meant for us, but that we don't know how to process
-    Logger.warn(fn ->
-      "#{__MODULE__} unexpected message ssh=#{inspect(ssh)} message=#{inspect(message)}"
-    end)
+    _ =
+      Logger.warn(fn ->
+        "#{__MODULE__} unexpected message ssh=#{inspect(ssh)} message=#{inspect(message)}"
+      end)
 
     {:ok, ssh, []}
   end

@@ -51,11 +51,12 @@ defmodule Tablespoon.Intersection do
     {:ok, communicator} = Communicator.connect(config.communicator)
     config = %{config | communicator: communicator}
 
-    Logger.info(fn ->
-      "started Intersection id=#{config.id} alias=#{config.alias} comm=#{
-        Communicator.name(communicator)
-      }"
-    end)
+    _ =
+      Logger.info(fn ->
+        "started Intersection id=#{config.id} alias=#{config.alias} comm=#{
+          Communicator.name(communicator)
+        }"
+      end)
 
     {:ok, %__MODULE__{config: config}, config.warning_timeout_ms}
   end
@@ -64,19 +65,20 @@ defmodule Tablespoon.Intersection do
   def handle_cast({:query, q}, %{config: config} = state) do
     {:ok, communicator, results} = Communicator.send(config.communicator, q)
 
-    Logger.info(fn ->
-      event_time_iso =
-        q.event_time
-        |> DateTime.from_unix!(:native)
-        |> DateTime.truncate(:second)
-        |> DateTime.to_iso8601()
+    _ =
+      Logger.info(fn ->
+        event_time_iso =
+          q.event_time
+          |> DateTime.from_unix!(:native)
+          |> DateTime.truncate(:second)
+          |> DateTime.to_iso8601()
 
-      "Query - id=#{config.id} alias=#{config.alias} comm=#{
-        Communicator.name(config.communicator)
-      } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-        event_time_iso
-      }"
-    end)
+        "Query - id=#{config.id} alias=#{config.alias} comm=#{
+          Communicator.name(config.communicator)
+        } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
+          event_time_iso
+        }"
+      end)
 
     config = %{config | communicator: communicator}
     config = Enum.reduce(results, config, &handle_results/2)
@@ -110,13 +112,14 @@ defmodule Tablespoon.Intersection do
         :erlang.time()
       end
 
-    if time >= config.warning_not_before_time and time <= config.warning_not_after_time do
-      Logger.warn(fn ->
-        "Intersection has not received a message in #{config.warning_timeout_ms}ms - id=#{
-          config.id
-        } alias=#{config.alias}"
-      end)
-    end
+    _ =
+      if time >= config.warning_not_before_time and time <= config.warning_not_after_time do
+        Logger.warn(fn ->
+          "Intersection has not received a message in #{config.warning_timeout_ms}ms - id=#{
+            config.id
+          } alias=#{config.alias}"
+        end)
+      end
 
     {:noreply, state, config.warning_timeout_ms}
   end
@@ -135,41 +138,43 @@ defmodule Tablespoon.Intersection do
   end
 
   def handle_results({:sent, q}, config) do
-    Logger.info(fn ->
-      event_time_iso =
-        q.event_time
-        |> DateTime.from_unix!(:native)
-        |> DateTime.truncate(:second)
-        |> DateTime.to_iso8601()
+    _ =
+      Logger.info(fn ->
+        event_time_iso =
+          q.event_time
+          |> DateTime.from_unix!(:native)
+          |> DateTime.truncate(:second)
+          |> DateTime.to_iso8601()
 
-      processing_time = Query.processing_time(q, :microsecond)
+        processing_time = Query.processing_time(q, :microsecond)
 
-      "Response - id=#{config.id} alias=#{config.alias} comm=#{
-        Communicator.name(config.communicator)
-      } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-        event_time_iso
-      } processing_time_us=#{processing_time}"
-    end)
+        "Response - id=#{config.id} alias=#{config.alias} comm=#{
+          Communicator.name(config.communicator)
+        } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
+          event_time_iso
+        } processing_time_us=#{processing_time}"
+      end)
 
     config
   end
 
   def handle_results({:failed, q, error}, config) do
-    Logger.info(fn ->
-      event_time_iso =
-        q.event_time
-        |> DateTime.from_unix!(:native)
-        |> DateTime.truncate(:second)
-        |> DateTime.to_iso8601()
+    _ =
+      Logger.info(fn ->
+        event_time_iso =
+          q.event_time
+          |> DateTime.from_unix!(:native)
+          |> DateTime.truncate(:second)
+          |> DateTime.to_iso8601()
 
-      processing_time = Query.processing_time(q, :microsecond)
+        processing_time = Query.processing_time(q, :microsecond)
 
-      "Failure - id=#{config.id} alias=#{config.alias} comm=#{
-        Communicator.name(config.communicator)
-      } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-        event_time_iso
-      } processing_time_us=#{processing_time} error=#{inspect(error)}"
-    end)
+        "Failure - id=#{config.id} alias=#{config.alias} comm=#{
+          Communicator.name(config.communicator)
+        } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
+          event_time_iso
+        } processing_time_us=#{processing_time} error=#{inspect(error)}"
+      end)
 
     config
   end
