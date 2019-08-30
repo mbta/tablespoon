@@ -51,13 +51,17 @@ defmodule Tablespoon.Communicator.Btd do
 
     pmpp = PMPP.encode(%PMPP{address: comm.address, control: :information_poll, body: ntcip})
 
-    with {:ok, transport} <- Transport.send(comm.transport, pmpp) do
-      # send ourselves a message to bail out if we don't get a response
-      timer = send_after(self(), {comm.ref, :timeout, comm.next_id, q}, comm.timeout)
-      in_flight = Map.put(comm.in_flight, comm.next_id, {q, timer})
+    case Transport.send(comm.transport, pmpp) do
+      {:ok, transport} ->
+        # send ourselves a message to bail out if we don't get a response
+        timer = send_after(self(), {comm.ref, :timeout, comm.next_id, q}, comm.timeout)
+        in_flight = Map.put(comm.in_flight, comm.next_id, {q, timer})
 
-      {:ok, %{comm | next_id: next_id(comm.next_id), in_flight: in_flight, transport: transport},
-       []}
+        {:ok,
+         %{comm | next_id: next_id(comm.next_id), in_flight: in_flight, transport: transport}, []}
+
+      {:error, e} ->
+        {:ok, comm, [{:failed, q, e}]}
     end
   end
 
