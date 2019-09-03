@@ -29,7 +29,7 @@ config :tablespoon, Tablespoon.Communicator.Btd,
   group: "fake_group",
   address: 1
 
-config :tablespoon, Tablespoon.Communicator.Modem, transport: Tablespoon.Transport.FakeModem
+config :tablespoon, Tablespoon.Communicator.Modem, transport: {Tablespoon.Transport.FakeModem, []}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

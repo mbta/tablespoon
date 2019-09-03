@@ -81,14 +81,16 @@ defmodule Tablespoon.Intersection.Config do
 
   defp communicator(%{"communicationType" => "Modem"} = map) do
     config = Application.get_env(:tablespoon, Communicator.Modem)
-    transport = config[:transport]
+    {transport, transport_opts} = config[:transport]
 
     Communicator.Modem.new(
       transport.new(
-        host: map["ipAddress"],
-        port: map["port"],
-        username: map["userName"],
-        password: map["password"]
+        [
+          host: map["ipAddress"],
+          port: map["port"],
+          username: map["userName"],
+          password: map["password"]
+        ] ++ transport_opts
       )
     )
   end
