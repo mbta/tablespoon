@@ -49,17 +49,9 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def init(config) do
-    {:ok, communicator} = Communicator.connect(config.communicator)
-    config = %{config | communicator: communicator}
-
-    _ =
-      Logger.info(fn ->
-        "started Intersection id=#{config.id} alias=#{config.alias} comm=#{
-          Communicator.name(communicator)
-        }"
-      end)
-
-    {:ok, %__MODULE__{config: config}, config.warning_timeout_ms}
+    state = %__MODULE__{config: config}
+    send(self(), :connect)
+    {:ok, state, config.warning_timeout_ms}
   end
 
   @impl GenServer
@@ -103,9 +95,21 @@ defmodule Tablespoon.Intersection do
   end
 
   @impl GenServer
-  def handle_info(:timeout, state) do
-    config = state.config
+  def handle_info(:connect, %{config: config} = state) do
+    {:ok, communicator} = Communicator.connect(config.communicator)
+    config = %{config | communicator: communicator}
 
+    _ =
+      Logger.info(fn ->
+        "started Intersection id=#{config.id} alias=#{config.alias} comm=#{
+          Communicator.name(communicator)
+        }"
+      end)
+
+    {:noreply, %{state | config: config}, config.warning_timeout_ms}
+  end
+
+  def handle_info(:timeout, %{config: config} = state) do
     time =
       if state.time_fn do
         state.time_fn.()
