@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tablespoon Testing</title>
+    <style type="text/css">
+      #request_form div {
+        padding-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tablespoon Testing</h1>
+    <form id="request_form">
+      <div>
+        <label for="vehicle">Vehicle ID:</label>
+        <input id="vehicle" name="vehicle" required />
+      </div>
+      <div>
+        <label for="intersection">Intersection Alias:</label>
+        <input id="intersection" name="intersection" required />
+      </div>
+      <div>
+        <label for="approach">Approach:</label>
+        <select id="approach" name="approach">
+          <option value="1">North (1)</option>
+          <option value="2">East (2)</option>
+          <option value="3">South (3)</option>
+          <option value="4">West (4)</option>
+        </select>
+      </div>
+      <div>
+        <button type="button" id="request">Request</button>
+        <button type="button" id="cancel">Cancel</button>
+      </div>
+    </form>
+    <script type="application/javascript">
+      let messageId = 0;
+      const form = document.getElementById("request_form");
+
+      function acceptResponse(resp) {
+        alert("Success!");
+      };
+
+      function failResponse(fail) {
+        console.error(fail);
+        alert("Failed; see console.");
+      };
+
+      function buttonClick(ev) {
+        if (!form.reportValidity()) {
+          return false;
+        };
+        messageId = messageId + 1;
+
+        const params = {
+          messageid: messageId,
+          type: ev.target.id,
+          intersection: form.elements["intersection"].value,
+          approach: form.elements["approach"].value,
+          vehicle: form.elements["vehicle"].value,
+          t: Math.trunc(+(new Date()) / 1000)
+        };
+
+        const query = Object.keys(params).map(key => key + '=' + params[key]).join('&');
+
+        fetch("/priority?" + query).then(acceptResponse, failResponse);
+
+        return false;
+      }
+
+      form.addEventListener("click", buttonClick);
+    </script>
+  </body>
+</html>
