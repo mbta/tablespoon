@@ -12,6 +12,7 @@ defmodule Tablespoon.Transport.FakeModemTest do
       {:ok, t} = FakeModem.connect(t)
       receive_connect_messages(t)
       assert {:ok, t} = FakeModem.send(t, @packet)
+      receive_echo(t)
       assert_receive x
       assert {:ok, _, [{:data, _}]} = FakeModem.stream(t, x)
     end
@@ -34,6 +35,7 @@ defmodule Tablespoon.Transport.FakeModemTest do
       {:ok, t} = FakeModem.connect(t)
       receive_connect_messages(t)
       assert {:ok, t} = FakeModem.send(t, @packet)
+      receive_echo(t)
       assert_receive x
       assert {:ok, _, [{:data, "ERROR"}]} = FakeModem.stream(t, x)
     end
@@ -44,6 +46,7 @@ defmodule Tablespoon.Transport.FakeModemTest do
       assert {:ok, t} = FakeModem.send(t, @packet)
       refute_received _
       # wait...
+      receive_echo(t)
       assert_receive x
       assert {:ok, _, [{:data, _}]} = FakeModem.stream(t, x)
     end
@@ -63,6 +66,14 @@ defmodule Tablespoon.Transport.FakeModemTest do
     # we get some initial messages on calling connect/1
     ref = t.ref
     assert_receive {^ref, {:data, "OK"}}
+    assert_receive {^ref, {:data, "\r"}}
+    assert_receive {^ref, {:data, "\n"}}
+  end
+
+  defp receive_echo(t) do
+    # we get an echo of the request we sent
+    ref = t.ref
+    assert_receive {^ref, {:data, "AT*RELAYOUT" <> _}}
     assert_receive {^ref, {:data, "\r"}}
     assert_receive {^ref, {:data, "\n"}}
   end

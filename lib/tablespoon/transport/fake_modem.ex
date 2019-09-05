@@ -88,7 +88,9 @@ defmodule Tablespoon.Transport.FakeModem do
     end
   end
 
-  defp handle_line(t, "AT*RELAYOUT" <> _) do
+  defp handle_line(t, "AT*RELAYOUT" <> _ = line) do
+    reply(t, line)
+
     if trigger?(t.response_error_rate) do
       reply(t, "ERROR")
     else

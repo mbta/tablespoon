@@ -133,6 +133,11 @@ defmodule Tablespoon.Communicator.Modem do
     {:ok, comm, [sent: q]}
   end
 
+  defp handle_line(%{connected?: true} = comm, "AT*RELAYOUT" <> _) do
+    # echo of our request
+    {:ok, comm, []}
+  end
+
   defp handle_line(%{connected?: true} = comm, line) do
     error =
       if line == "ERROR" do
