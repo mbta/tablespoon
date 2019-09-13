@@ -8,12 +8,10 @@ defmodule Tablespoon.Communicator.BtdTest do
   doctest Tablespoon.Communicator.Btd
 
   alias Tablespoon.Protocol.NTCIP1211Extended, as: NTCIP
-  alias Tablespoon.Protocol.PMPP
   alias Tablespoon.Query
   alias Tablespoon.Transport.Fake, as: FakeTransport
 
   @group "group"
-  @address 12
   @intersection_id 1234
 
   setup_all do
@@ -28,7 +26,7 @@ defmodule Tablespoon.Communicator.BtdTest do
   end
 
   describe "send/2" do
-    test "sends a PMPP/NTCIP1211 request query and receives an ack" do
+    test "sends a NTCIP1211 request query and receives an ack" do
       query =
         Query.new(
           id: 1,
@@ -43,7 +41,6 @@ defmodule Tablespoon.Communicator.BtdTest do
         Btd.new(
           FakeTransport.new(),
           group: @group,
-          address: @address,
           intersection_id: @intersection_id
         )
 
@@ -69,19 +66,14 @@ defmodule Tablespoon.Communicator.BtdTest do
           message: ntcip_message
         })
 
-      pmpp = PMPP.encode(%PMPP{address: @address, control: :information_poll, body: ntcip})
-
-      {:ok, comm, [sent: ^query]} = Btd.stream(comm, pmpp)
+      {:ok, comm, [sent: ^query]} = Btd.stream(comm, ntcip)
       [sent_packet] = comm.transport.sent
 
-      assert {:ok, %PMPP{address: @address, control: :information_poll, body: ntcip_body}, ""} =
-               PMPP.decode(sent_packet)
-
       assert {:ok, %NTCIP{group: @group, pdu_type: :set, request_id: 0, message: ^ntcip_message}} =
-               NTCIP.decode(ntcip_body)
+               NTCIP.decode(sent_packet)
     end
 
-    test "sends a PMPP/NTCIP1211 cancel query and receives an ack" do
+    test "sends a NTCIP1211 cancel query and receives an ack" do
       query =
         Query.new(
           id: 1,
@@ -96,7 +88,6 @@ defmodule Tablespoon.Communicator.BtdTest do
         Btd.new(
           FakeTransport.new(),
           group: @group,
-          address: @address,
           intersection_id: @intersection_id
         )
 
@@ -119,16 +110,11 @@ defmodule Tablespoon.Communicator.BtdTest do
           message: ntcip_message
         })
 
-      pmpp = PMPP.encode(%PMPP{address: @address, control: :information_poll, body: ntcip})
-
-      {:ok, comm, [sent: ^query]} = Btd.stream(comm, pmpp)
+      {:ok, comm, [sent: ^query]} = Btd.stream(comm, ntcip)
       [sent_packet] = comm.transport.sent
 
-      assert {:ok, %PMPP{address: @address, control: :information_poll, body: ntcip_body}, ""} =
-               PMPP.decode(sent_packet)
-
       assert {:ok, %NTCIP{group: @group, pdu_type: :set, request_id: 0, message: ^ntcip_message}} =
-               NTCIP.decode(ntcip_body)
+               NTCIP.decode(sent_packet)
     end
   end
 
@@ -138,7 +124,6 @@ defmodule Tablespoon.Communicator.BtdTest do
         Btd.new(
           FakeTransport.new(),
           group: @group,
-          address: @address,
           intersection_id: @intersection_id
         )
 
@@ -153,7 +138,6 @@ defmodule Tablespoon.Communicator.BtdTest do
           Btd.new(
             FakeTransport.new(),
             group: @group,
-            address: @address,
             intersection_id: @intersection_id,
             timeout: 0
           )
@@ -196,37 +180,27 @@ defmodule Tablespoon.Communicator.BtdTest do
 
   defp stream_response(comm, :succeed) do
     data = List.last(comm.transport.sent)
-    {:ok, pmpp, ""} = PMPP.decode(IO.iodata_to_binary(data))
-    {:ok, ntcip} = NTCIP.decode(pmpp.body)
+    {:ok, ntcip} = NTCIP.decode(IO.iodata_to_binary(data))
     ntcip_response = NTCIP.encode(%{ntcip | pdu_type: :response})
-    IO.iodata_to_binary(PMPP.encode(%{pmpp | body: ntcip_response}))
+    IO.iodata_to_binary(ntcip_response)
   end
 
   defp stream_response(comm, :extra) do
     data = List.last(comm.transport.sent)
-    {:ok, pmpp, ""} = PMPP.decode(IO.iodata_to_binary(data))
-    {:ok, ntcip} = NTCIP.decode(pmpp.body)
+    {:ok, ntcip} = NTCIP.decode(IO.iodata_to_binary(data))
     ntcip_response = NTCIP.encode(%{ntcip | pdu_type: :response})
-    data = IO.iodata_to_binary(PMPP.encode(%{pmpp | body: ntcip_response}))
+    data = IO.iodata_to_binary(ntcip_response)
     # send ourselves an extra copy of the response
     Kernel.send(self(), data)
 
     data
   end
 
-  defp stream_response(comm, :change_address) do
-    data = List.last(comm.transport.sent)
-    {:ok, pmpp, ""} = PMPP.decode(IO.iodata_to_binary(data))
-    pmpp = %{pmpp | address: pmpp.address + 1}
-    IO.iodata_to_binary(PMPP.encode(pmpp))
-  end
-
   defp stream_response(comm, :change_group) do
     data = List.last(comm.transport.sent)
-    {:ok, pmpp, ""} = PMPP.decode(IO.iodata_to_binary(data))
-    {:ok, ntcip} = NTCIP.decode(pmpp.body)
+    {:ok, ntcip} = NTCIP.decode(IO.iodata_to_binary(data))
     ntcip_response = NTCIP.encode(%{ntcip | group: "other group", pdu_type: :response})
-    IO.iodata_to_binary(PMPP.encode(%{pmpp | body: ntcip_response}))
+    IO.iodata_to_binary(ntcip_response)
   end
 
   defp stream_response(_comm, :drop) do
@@ -234,13 +208,7 @@ defmodule Tablespoon.Communicator.BtdTest do
   end
 
   defp stream_response(_comm, :invalid_ntcip) do
-    IO.iodata_to_binary(
-      PMPP.encode(%PMPP{address: @address, control: :information_poll, body: ""})
-    )
-  end
-
-  defp stream_response(_comm, :invalid_pmpp) do
-    <<0x7E, 0x00, 0x00, 0x7E>>
+    "invalid body"
   end
 
   defp stream_response(_comm, :close) do
@@ -272,10 +240,7 @@ defmodule Tablespoon.Communicator.BtdTest do
     frequency([
       {10, :succeed},
       {2, :drop},
-      {1, :extra},
       {1, :invalid_ntcip},
-      {1, :invalid_pmpp},
-      {1, :change_address},
       {1, :change_group},
       {2, :close}
     ])

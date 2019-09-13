@@ -2,9 +2,8 @@ defmodule Tablespoon.Communicator.Btd do
   @moduledoc """
   Communication with the Boston Transportation Department (BTD).
 
-  The communication is over PMPP-wrapped NTCIP1211 Extended packets.
+  The communication is over NTCIP1211 Extended packets.
 
-  - address: passed-in
   - group: passed-in
   - id: always 0
   - id in message: increases with each request, up to 255 where it wraps back to 1
@@ -19,12 +18,11 @@ defmodule Tablespoon.Communicator.Btd do
   @behaviour Tablespoon.Communicator
 
   alias Tablespoon.Protocol.NTCIP1211Extended, as: NTCIP
-  alias Tablespoon.Protocol.PMPP
   alias Tablespoon.{Query, Transport}
 
   require Logger
 
-  @enforce_keys [:transport, :address, :group, :intersection_id, :ref]
+  @enforce_keys [:transport, :group, :intersection_id, :ref]
   defstruct @enforce_keys ++ [timeout: 5_000, next_id: 1, in_flight: %{}]
 
   @impl Tablespoon.Communicator
@@ -49,9 +47,7 @@ defmodule Tablespoon.Communicator.Btd do
         message: ntcip_message(comm, q)
       })
 
-    pmpp = PMPP.encode(%PMPP{address: comm.address, control: :information_poll, body: ntcip})
-
-    case Transport.send(comm.transport, pmpp) do
+    case Transport.send(comm.transport, ntcip) do
       {:ok, transport} ->
         # send ourselves a message to bail out if we don't get a response
         timer = send_after(self(), {comm.ref, :timeout, comm.next_id, q}, comm.timeout)
@@ -139,14 +135,14 @@ defmodule Tablespoon.Communicator.Btd do
   end
 
   defp handle_stream_results({:data, binary}, {:ok, comm, events}) do
-    case PMPP.decode(binary) do
-      {:ok, pmpp, ""} ->
-        handle_pmpp(comm, pmpp, events)
+    case NTCIP.decode(binary) do
+      {:ok, ntcip} ->
+        handle_ntcip(comm, ntcip, events)
 
-      {:error, e, _} ->
+      {:error, e} ->
         _ =
           Logger.warn(fn ->
-            "unexpected error decoding PMPP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
+            "unexpected error decoding NTCIP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
               inspect(binary)
             }"
           end)
@@ -172,33 +168,7 @@ defmodule Tablespoon.Communicator.Btd do
     end
   end
 
-  defp handle_pmpp(%{address: address} = comm, %{address: address} = pmpp, events) do
-    case NTCIP.decode(pmpp.body) do
-      {:ok, ntcip} ->
-        handle_nctip(comm, ntcip, events)
-
-      {:error, e} ->
-        _ =
-          Logger.warn(fn ->
-            "unexpected error decoding NTCIP comm=#{inspect(comm)} error=#{inspect(e)} body=#{
-              inspect(pmpp.body)
-            }"
-          end)
-
-        {:cont, {:ok, comm, events}}
-    end
-  end
-
-  defp handle_pmpp(comm, pmpp, events) do
-    _ =
-      Logger.warn(fn ->
-        "unexpected PMPP message comm=#{inspect(comm)} message=#{inspect(pmpp)}"
-      end)
-
-    {:cont, {:ok, comm, events}}
-  end
-
-  defp handle_nctip(%{group: group} = comm, %{group: group, pdu_type: :response} = ntcip, events) do
+  defp handle_ntcip(%{group: group} = comm, %{group: group, pdu_type: :response} = ntcip, events) do
     case Map.pop(comm.in_flight, ntcip.message.id) do
       {nil, _} ->
         _ =
@@ -216,7 +186,7 @@ defmodule Tablespoon.Communicator.Btd do
     end
   end
 
-  defp handle_nctip(comm, ntcip, events) do
+  defp handle_ntcip(comm, ntcip, events) do
     _ =
       Logger.warn(fn ->
         "unexpected NTCIP1211 message comm=#{inspect(comm)} message=#{inspect(ntcip)}"

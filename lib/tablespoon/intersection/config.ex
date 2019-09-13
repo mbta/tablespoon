@@ -74,7 +74,6 @@ defmodule Tablespoon.Intersection.Config do
     Communicator.Btd.new(
       transport.new(transport_opts),
       group: config[:group],
-      address: config[:address],
       intersection_id: intersection_id
     )
   end

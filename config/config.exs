@@ -26,8 +26,7 @@ config :phoenix, :json_library, Jason
 # connection configuration for the different types of Communicators
 config :tablespoon, Tablespoon.Communicator.Btd,
   transport: {Tablespoon.Transport.FakeBtd, []},
-  group: "fake_group",
-  address: 1
+  group: "fake_group"
 
 config :tablespoon, Tablespoon.Communicator.Modem, transport: {Tablespoon.Transport.FakeModem, []}
 

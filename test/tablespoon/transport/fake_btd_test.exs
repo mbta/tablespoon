@@ -3,7 +3,6 @@ defmodule Tablespoon.Transport.FakeBtdTest do
   use ExUnit.Case, async: true
 
   alias Tablespoon.Protocol.NTCIP1211Extended, as: NTCIP
-  alias Tablespoon.Protocol.PMPP
   alias Tablespoon.Transport.FakeBtd
 
   ntcip_message = %NTCIP.PriorityRequest{
@@ -17,15 +16,12 @@ defmodule Tablespoon.Transport.FakeBtdTest do
     intersection_id: 40
   }
 
-  ntcip =
-    NTCIP.encode(%NTCIP{
-      group: "group",
-      pdu_type: :response,
-      request_id: 0,
-      message: ntcip_message
-    })
-
-  @packet PMPP.encode(%PMPP{address: 1, control: :information_poll, body: ntcip})
+  @packet NTCIP.encode(%NTCIP{
+            group: "group",
+            pdu_type: :response,
+            request_id: 0,
+            message: ntcip_message
+          })
 
   describe "send/2" do
     test "sends a data reply" do

@@ -14,7 +14,6 @@ defmodule Tablespoon.Transport.FakeBtd do
   @behaviour Tablespoon.Transport
 
   alias Tablespoon.Protocol.NTCIP1211Extended, as: NTCIP
-  alias Tablespoon.Protocol.PMPP
 
   defstruct [
     :ref,
@@ -49,11 +48,9 @@ defmodule Tablespoon.Transport.FakeBtd do
         {:error, :trigger_failed}
 
       true ->
-        {:ok, pmpp, ""} = PMPP.decode(IO.iodata_to_binary(data))
-        {:ok, ntcip} = NTCIP.decode(pmpp.body)
+        {:ok, ntcip} = NTCIP.decode(IO.iodata_to_binary(data))
         ntcip_response = NTCIP.encode(%{ntcip | pdu_type: :response})
-        pmpp = PMPP.encode(%{pmpp | body: ntcip_response})
-        message = {t.ref, {:data, IO.iodata_to_binary(pmpp)}}
+        message = {t.ref, {:data, IO.iodata_to_binary(ntcip_response)}}
         delay = Enum.random(t.delay_range)
         _ = Process.send_after(self(), message, delay)
         {:ok, t}
