@@ -69,10 +69,10 @@ defmodule Tablespoon.Intersection.Config do
 
   defp communicator(%{"communicationType" => "Btd", "intersectionId" => intersection_id}) do
     config = Application.get_env(:tablespoon, Communicator.Btd)
-    {transport, transport_opts} = config[:transport]
+    transport = transport(config[:transport])
 
     Communicator.Btd.new(
-      transport.new(transport_opts),
+      transport,
       group: config[:group],
       intersection_id: intersection_id
     )
@@ -80,17 +80,28 @@ defmodule Tablespoon.Intersection.Config do
 
   defp communicator(%{"communicationType" => "Modem"} = map) do
     config = Application.get_env(:tablespoon, Communicator.Modem)
-    {transport, transport_opts} = config[:transport]
 
-    Communicator.Modem.new(
-      transport.new(
-        [
-          host: map["ipAddress"],
-          port: map["port"],
-          username: map["userName"],
-          password: map["password"]
-        ] ++ transport_opts
-      )
-    )
+    additional_opts = [
+      host: map["ipAddress"],
+      port: map["port"],
+      username: map["userName"],
+      password: map["password"]
+    ]
+
+    transport = transport(config[:transport], additional_opts)
+
+    Communicator.Modem.new(transport)
+  end
+
+  defp transport({transport, transport_opts}, additional_opts \\ []) do
+    transport_opts =
+      if Keyword.has_key?(transport_opts, :transport) do
+        sub_transport = transport(transport_opts[:transport])
+        Keyword.put(transport_opts, :transport, sub_transport)
+      else
+        transport_opts
+      end
+
+    transport.new(transport_opts ++ additional_opts)
   end
 end
