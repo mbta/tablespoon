@@ -5,7 +5,7 @@ defmodule Tablespoon.Intersection.Supervisor do
   use Supervisor
 
   def start_link(configs) do
-    Supervisor.start_link(__MODULE__, configs, name: __MODULE__)
+    Supervisor.start_link(__MODULE__, configs)
   end
 
   @impl Supervisor

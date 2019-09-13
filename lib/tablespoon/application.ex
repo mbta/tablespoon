@@ -10,12 +10,9 @@ defmodule Tablespoon.Application do
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
-      {Registry, name: Tablespoon.Intersection.registry(), keys: :unique},
-      {Tablespoon.Intersection.Supervisor, configs()},
+      {Tablespoon.Intersection.SuperSupervisor, configs()},
       # Start the endpoint when the application starts
       TablespoonWeb.Endpoint
-      # Starts a worker by calling: Tablespoon.Worker.start_link(arg)
-      # {Tablespoon.Worker, arg},
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
