@@ -195,13 +195,13 @@ defmodule Tablespoon.Communicator.Btd do
     {:cont, {:ok, comm, events}}
   end
 
-  defp send_after(pid, message, 0) do
+  defp send_after(pid, message, after_time) when after_time > 0 do
+    Process.send_after(pid, message, after_time)
+  end
+
+  defp send_after(pid, message, _after_time) do
     Kernel.send(pid, message)
     # fake timer
     make_ref()
-  end
-
-  defp send_after(pid, message, after_time) do
-    Process.send_after(pid, message, after_time)
   end
 end

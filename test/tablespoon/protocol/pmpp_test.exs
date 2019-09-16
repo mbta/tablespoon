@@ -6,8 +6,10 @@ defmodule Tablespoon.Protocol.PMPPTest do
 
   describe "encode/decode" do
     property "encode/decode are parallel operations" do
-      check all message <- gen_message(),
-                extra <- StreamData.binary() do
+      check all(
+              message <- gen_message(),
+              extra <- StreamData.binary()
+            ) do
         encoded = PMPP.encode(message)
         binary = IO.iodata_to_binary([encoded, extra])
         assert {:ok, ^message, ^extra} = PMPP.decode(binary)
@@ -78,7 +80,7 @@ defmodule Tablespoon.Protocol.PMPPTest do
     end
 
     property "does not crash on any input" do
-      check all data <- gen_body() do
+      check all(data <- gen_body()) do
         PMPP.decode(data)
       end
     end
@@ -92,9 +94,11 @@ defmodule Tablespoon.Protocol.PMPPTest do
       |> Enum.map(&constant/1)
       |> one_of()
 
-    gen all address <- address,
-            control <- control,
-            body <- gen_body() do
+    gen all(
+          address <- address,
+          control <- control,
+          body <- gen_body()
+        ) do
       %PMPP{
         address: address,
         control: control,

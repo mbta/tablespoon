@@ -6,7 +6,7 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
 
   describe "encode/decode" do
     property "returns the same value" do
-      check all message <- gen_message() do
+      check all(message <- gen_message()) do
         encoded = IO.iodata_to_binary(NTCIP.encode(message))
         {:ok, decoded} = NTCIP.decode(encoded)
         assert message == decoded
@@ -50,7 +50,7 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
     end
 
     property "does not crash when receiving invalid packets" do
-      check all packet <- modified_packet(@encoded_sample) do
+      check all(packet <- modified_packet(@encoded_sample)) do
         NTCIP.decode(packet)
       end
     end
@@ -121,9 +121,11 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
   end
 
   def packet_modifications(packet, byte_size, remaining) do
-    gen all index <- integer(0..(byte_size - 1)),
-            replacement <- list_of(integer(0..255)),
-            packet <- packet_modifications(packet, byte_size, remaining - 1) do
+    gen all(
+          index <- integer(0..(byte_size - 1)),
+          replacement <- list_of(integer(0..255)),
+          packet <- packet_modifications(packet, byte_size, remaining - 1)
+        ) do
       List.replace_at(packet, index, replacement)
     end
   end

@@ -48,14 +48,17 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
     ]
     defstruct @enforce_keys
 
+    # The spec says that vehicle_class_level, time_of_service_desired, and
+    # time_of_estimated_departure can't have 0 as a valid value, but that's
+    # what we sent to BTD.
     @type t :: %__MODULE__{
             id: 1..255,
             vehicle_id: binary,
             vehicle_class: 1..10,
-            vehicle_class_level: 1..10,
+            vehicle_class_level: 0..10,
             strategy: 1..255,
-            time_of_service_desired: 1..65_535,
-            time_of_estimated_departure: 1..65_535,
+            time_of_service_desired: 0..65_535,
+            time_of_estimated_departure: 0..65_535,
             intersection_id: 1..65_535
           }
 
@@ -107,11 +110,13 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
     @enforce_keys [:id, :vehicle_id, :vehicle_class, :vehicle_class_level, :strategy]
     defstruct @enforce_keys
 
+    # The spec says that vehicle_class_level can't have 0 as a valid value,
+    # but that's what we sent to BTD.
     @type t :: %__MODULE__{
             id: 1..255,
             vehicle_id: binary,
             vehicle_class: 1..10,
-            vehicle_class_level: 1..10,
+            vehicle_class_level: 0..10,
             strategy: 1..255
           }
 
