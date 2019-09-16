@@ -36,10 +36,12 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       receive do
         x ->
           assert {:ok, %PMPPMultiplex{}, [{:data, ^message}]} = PMPPMultiplex.stream(t, x)
+          assert :unknown = PMPPMultiplex.stream(t2, x)
       end
 
       receive do
         x ->
+          assert :unknown = PMPPMultiplex.stream(t, x)
           assert {:ok, %PMPPMultiplex{}, [{:data, ^message2}]} = PMPPMultiplex.stream(t2, x)
       end
     end
