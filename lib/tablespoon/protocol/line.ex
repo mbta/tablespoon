@@ -10,7 +10,7 @@ defmodule Tablespoon.Protocol.Line do
   @suffix "\n"
 
   @doc "Encode a line and the suffix"
-  @spec encode(binary) :: iodata
+  @spec encode(iodata) :: iodata
   def encode(line) do
     [line, @suffix]
   end

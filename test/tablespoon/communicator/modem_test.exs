@@ -129,7 +129,7 @@ defmodule Tablespoon.Communicator.ModemTest do
     end
 
     property "always returns sent or failed for a query" do
-      check all query_responses <- list_of(query_response(), min_length: 1) do
+      check all(query_responses <- list_of(query_response(), min_length: 1)) do
         comm = Modem.new(FakeTransport.new())
         {:ok, comm} = Modem.connect(comm)
         {:ok, comm, []} = Modem.stream(comm, "OK\n")
@@ -170,8 +170,10 @@ defmodule Tablespoon.Communicator.ModemTest do
   end
 
   defp query do
-    gen all type <- one_of([:request, :cancel]),
-            approach <- one_of([:north, :east, :south, :west]) do
+    gen all(
+          type <- one_of([:request, :cancel]),
+          approach <- one_of([:north, :east, :south, :west])
+        ) do
       Query.new(
         id: 1,
         type: type,

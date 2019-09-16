@@ -133,7 +133,7 @@ defmodule Tablespoon.Communicator.BtdTest do
     end
 
     property "always returns a response" do
-      check all query_responses <- list_of(query_response(), min_length: 1) do
+      check all(query_responses <- list_of(query_response(), min_length: 1)) do
         comm =
           Btd.new(
             FakeTransport.new(),
@@ -216,15 +216,19 @@ defmodule Tablespoon.Communicator.BtdTest do
   end
 
   defp query_response do
-    gen all response <- response(),
-            query <- query() do
+    gen all(
+          response <- response(),
+          query <- query()
+        ) do
       {query, response}
     end
   end
 
   defp query do
-    gen all type <- one_of([:request, :cancel]),
-            approach <- one_of([:north, :east, :south, :west]) do
+    gen all(
+          type <- one_of([:request, :cancel]),
+          approach <- one_of([:north, :east, :south, :west])
+        ) do
       Query.new(
         id: 1,
         type: type,

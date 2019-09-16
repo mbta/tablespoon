@@ -6,7 +6,7 @@ defmodule TablespoonWeb.Controllers.PriorityTest do
 
   describe "query_from_params/1" do
     property "params are parsed into a query" do
-      check all params <- gen_params() do
+      check all(params <- gen_params()) do
         actual = query_from_params(params)
         assert %Tablespoon.Query{} = actual
         assert actual.id == params["messageid"]

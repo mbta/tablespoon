@@ -5,6 +5,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   use GenServer
   alias Tablespoon.Protocol.PMPP
   alias Tablespoon.Transport
+  require Logger
 
   defstruct [:transport, :address, buffer: "", queue: :queue.new()]
 
@@ -43,7 +44,12 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
         {:noreply, Enum.reduce(messages, state, &handle_message/2)}
 
       :unknown ->
-        super(message, state)
+        _ =
+          Logger.warn(fn ->
+            "unexpected PMPPMultiplex.Child message pid=#{self()} message=#{inspect(message)}"
+          end)
+
+        {:noreply, state}
     end
   end
 

@@ -80,18 +80,10 @@ defmodule Tablespoon.Intersection do
     {:noreply, state, config.warning_timeout_ms}
   end
 
-  def handle_cast(message, state) do
-    super(message, state)
-  end
-
   @impl GenServer
   def handle_call(:flush, _from, state) do
     {:message_queue_len, len} = Process.info(self(), :message_queue_len)
     {:reply, {:ok, len}, state}
-  end
-
-  def handle_call(message, from, state) do
-    super(message, from, state)
   end
 
   @impl GenServer
@@ -138,7 +130,14 @@ defmodule Tablespoon.Intersection do
         {:noreply, state, config.warning_timeout_ms}
 
       :unknown ->
-        super(message, state)
+        _ =
+          Logger.warn(fn ->
+            "unexpected message id=#{config.id} alias=#{config.alias} comm=#{
+              Communicator.name(config.communicator)
+            } message=#{inspect(message)}"
+          end)
+
+        {:noreply, state, config.warning_timeout_ms}
     end
   end
 
