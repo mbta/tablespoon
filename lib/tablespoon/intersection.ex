@@ -50,8 +50,7 @@ defmodule Tablespoon.Intersection do
   @impl GenServer
   def init(config) do
     state = %__MODULE__{config: config}
-    send(self(), :connect)
-    {:ok, state, config.warning_timeout_ms}
+    {:ok, state, {:continue, :connect}}
   end
 
   @impl GenServer
@@ -87,7 +86,7 @@ defmodule Tablespoon.Intersection do
   end
 
   @impl GenServer
-  def handle_info(:connect, %{config: config} = state) do
+  def handle_continue(:connect, %{config: config} = state) do
     {:ok, communicator} = Communicator.connect(config.communicator)
     config = %{config | communicator: communicator}
 
@@ -101,6 +100,7 @@ defmodule Tablespoon.Intersection do
     {:noreply, %{state | config: config}, config.warning_timeout_ms}
   end
 
+  @impl GenServer
   def handle_info(:timeout, %{config: config} = state) do
     time =
       if state.time_fn do
