@@ -71,7 +71,7 @@ defmodule Tablespoon.Transport.FakeModem do
 
     _ =
       for message <- [data, "\r", "\n"] do
-        Process.send_after(self(), {t.ref, {:data, message}}, delay)
+        send_after(self(), {t.ref, {:data, message}}, delay)
       end
 
     :ok
@@ -102,5 +102,13 @@ defmodule Tablespoon.Transport.FakeModem do
 
   def trigger?(rate) do
     Enum.random(1..100) <= rate
+  end
+
+  defp send_after(pid, message, delay) when delay > 0 do
+    Process.send_after(pid, message, delay)
+  end
+
+  defp send_after(pid, message, _delay) do
+    Kernel.send(pid, message)
   end
 end
