@@ -22,13 +22,14 @@ defmodule Tablespoon.Protocol.PMPP do
   These notes are from reading the NTCIP 9001 documentation: https://www.ntcip.org/wp-content/uploads/2018/11/NTCIP9001v0406r.pdf
   """
   @enforce_keys [:address, :control, :body]
-  defstruct @enforce_keys
+  defstruct @enforce_keys ++ [protocol: :snmp]
 
   use Bitwise
 
   @type t :: %__MODULE__{
           address: 0..255,
           control: :poll | :information_poll | :information,
+          protocol: :snmp,
           body: iodata
         }
   @type error :: :unknown | :too_short | :crc_failed
@@ -45,6 +46,7 @@ defmodule Tablespoon.Protocol.PMPP do
       IO.iodata_to_binary([
         <<pmpp.address::unsigned-integer-8>>,
         control_as_binary(pmpp.control),
+        protocol_as_binary(pmpp.protocol),
         pmpp.body
       ])
 
@@ -68,19 +70,21 @@ defmodule Tablespoon.Protocol.PMPP do
     {:error, :unknown, binary}
   end
 
-  # must have at least two bytes for the address and controll, plus two bytes for the CRC
-  defp do_decode(rest, extra) when byte_size(rest) >= 4 do
+  # must have at least 3 bytes for the address/control/protocokl identifier, plus two bytes for the CRC
+  defp do_decode(rest, extra) when byte_size(rest) >= 5 do
     rest = unreplace_flag(rest)
     rest_size = byte_size(rest)
     crc = :binary.part(rest, rest_size, -2)
     rest = :binary.part(rest, 0, rest_size - 2)
 
     if checksum(rest) == crc do
-      <<address::unsigned-integer-8, control_binary::unsigned-integer-8, body::binary>> = rest
+      <<address::unsigned-integer-8, control_binary::unsigned-integer-8,
+        protocol_binary::unsigned-integer-8, body::binary>> = rest
 
       message = %__MODULE__{
         address: address,
         control: control_from_binary(control_binary),
+        protocol: protocol_from_binary(protocol_binary),
         body: body
       }
 
@@ -98,6 +102,9 @@ defmodule Tablespoon.Protocol.PMPP do
     defp control_as_binary(unquote(control)), do: unquote(value)
     defp control_from_binary(unquote(value)), do: unquote(control)
   end
+
+  defp protocol_as_binary(:snmp), do: 0xC1
+  defp protocol_from_binary(0xC1), do: :snmp
 
   defp replace_flag(binary) do
     binary = :binary.replace(binary, @escape, @escaped_escape, [:global])
