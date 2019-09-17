@@ -120,7 +120,7 @@ defmodule Tablespoon.Protocol.PMPP do
 
   def checksum("", fcs) do
     fcs = fcs ^^^ 0xFFFF
-    <<fcs::unsigned-big-integer-16>>
+    <<fcs::unsigned-little-integer-16>>
   end
 
   def checksum(<<byte::unsigned-integer-8, rest::binary>>, fcs) do

@@ -22,7 +22,7 @@ defmodule Tablespoon.Protocol.PMPPTest do
     control: :information_poll,
     body: "x"
   }
-  @encoded <<0x7E, 0x05, 0x13, 0xC1, "x", 0xD4, 0xC5, 0x7E>>
+  @encoded <<0x7E, 0x05, 0x13, 0xC1, "x", 0xC5, 0xD4, 0x7E>>
 
   describe "encode/1" do
     test "properly encodes a message" do
