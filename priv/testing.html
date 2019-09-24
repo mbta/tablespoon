@@ -47,6 +47,9 @@
       };
 
       function buttonClick(ev) {
+        if (ev.target.type !== "button") {
+          return false;
+        }
         if (!form.reportValidity()) {
           return false;
         };
