@@ -173,7 +173,7 @@ defmodule Tablespoon.Communicator.Btd do
       {nil, _} ->
         _ =
           Logger.warn(fn ->
-            "unexpected response for message comm=#{inspect(comm)} message=#{ntcip}"
+            "unexpected response for message comm=#{inspect(comm)} message=#{inspect(ntcip)}"
           end)
 
         {:cont, {:ok, comm, events}}
