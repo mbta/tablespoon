@@ -56,6 +56,22 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
     end
   end
 
+  describe "decode_id/1" do
+    property "returns the ID of the message" do
+      check all(message <- gen_message()) do
+        expected = {:ok, message.request_id}
+        actual = NTCIP.decode_id(NTCIP.encode(message))
+        assert actual == expected
+      end
+    end
+
+    property "does not crash" do
+      check all(packet <- modified_packet(@encoded_sample)) do
+        NTCIP.decode_id(packet)
+      end
+    end
+  end
+
   def gen_message do
     pdu_type =
       [:set, :response]

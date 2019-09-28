@@ -190,6 +190,23 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
       {:error, :invalid}
   end
 
+  @doc "Return the ID of the message, or an error if we're unable to parse"
+  @spec decode_id(iodata) :: {:ok, integer} | {:error, error}
+  def decode_id(iodata) do
+    binary = IO.iodata_to_binary(iodata)
+
+    {:message, :"version-1", _group_list, {:pdu, _pdu_type, request_id, :noError, 0, _pdu}} =
+      :snmp_pdus.dec_message(:binary.bin_to_list(binary))
+
+    {:ok, request_id}
+  rescue
+    _e in [MatchError, FunctionClauseError] ->
+      {:error, :invalid}
+  catch
+    :exit, _reason ->
+      {:error, :invalid}
+  end
+
   defp as_snmp_pdu_message(message) do
     {:message, :"version-1", :binary.bin_to_list(message.group), as_snmp_pdu(message)}
   end
