@@ -6,8 +6,8 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
   """
   @behaviour Tablespoon.Transport
 
-  @enforce_keys [:transport, :address]
-  defstruct [:transport, :address, :from]
+  @enforce_keys [:transport, :address, :id_mfa]
+  defstruct [:transport, :address, :id_mfa, :from]
 
   @impl Tablespoon.Transport
   def new(opts) when is_list(opts) do
@@ -67,8 +67,8 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
     {:ok, t, [response]}
   end
 
-  defp child_spec(%__MODULE__{transport: transport, address: address} = t) do
-    {__MODULE__.Child, {transport, address, child_name(t)}}
+  defp child_spec(%__MODULE__{transport: transport, address: address, id_mfa: {m, f, a}} = t) do
+    {__MODULE__.Child, {transport, address, &apply(m, f, [&1 | a]), child_name(t)}}
   end
 
   defp child_name(%{transport: transport, address: address}) do

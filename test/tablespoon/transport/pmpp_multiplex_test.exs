@@ -4,9 +4,11 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
   alias Tablespoon.Transport.PMPPMultiplex
 
+  @id_mfa {__MODULE__, :id, []}
+
   describe "send + stream" do
     test "receives an echo message" do
-      t = PMPPMultiplex.new(transport: Echo.new(), address: 2)
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 2, id_mfa: @id_mfa)
       {:ok, t} = PMPPMultiplex.connect(t)
       message = test_message()
       {:ok, t} = PMPPMultiplex.send(t, message)
@@ -19,8 +21,8 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
     test "two different transports receive different messages" do
       transport = Echo.new()
-      t = PMPPMultiplex.new(transport: transport, address: 3)
-      t2 = PMPPMultiplex.new(transport: transport, address: 3)
+      t = PMPPMultiplex.new(transport: transport, address: 3, id_mfa: @id_mfa)
+      t2 = PMPPMultiplex.new(transport: transport, address: 3, id_mfa: @id_mfa)
       {:ok, t} = PMPPMultiplex.connect(t)
       {:ok, t2} = PMPPMultiplex.connect(t2)
 
@@ -33,21 +35,39 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       {:ok, t} = PMPPMultiplex.send(t, message)
       {:ok, t2} = PMPPMultiplex.send(t2, message2)
 
-      receive do
-        x ->
-          assert {:ok, %PMPPMultiplex{}, [{:data, ^message}]} = PMPPMultiplex.stream(t, x)
-          assert :unknown = PMPPMultiplex.stream(t2, x)
-      end
+      pairs = [{t, message}, {t2, message2}]
+
+      seen =
+        receive do
+          x ->
+            assert_from_one_of(x, pairs)
+        end
 
       receive do
         x ->
-          assert :unknown = PMPPMultiplex.stream(t, x)
-          assert {:ok, %PMPPMultiplex{}, [{:data, ^message2}]} = PMPPMultiplex.stream(t2, x)
+          assert_from_one_of(x, pairs -- [seen])
       end
     end
 
+    defp assert_from_one_of(x, pairs) do
+      pairs =
+        for {t, message} = pair <- pairs do
+          case PMPPMultiplex.stream(t, x) do
+            :unknown ->
+              nil
+
+            response ->
+              assert {:ok, %PMPPMultiplex{}, [{:data, ^message}]} = response
+              pair
+          end
+        end
+
+      assert [seen] = Enum.filter(pairs, &is_tuple/1)
+      seen
+    end
+
     test "closing the child returns a closed message" do
-      t = PMPPMultiplex.new(transport: Echo.new(), address: 4)
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 4, id_mfa: @id_mfa)
       {:ok, t} = PMPPMultiplex.connect(t)
       # breaking into the struct to get the child we're connected to
       {pid, _} = t.from
@@ -62,6 +82,10 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
   defp test_message do
     Integer.to_string(:erlang.unique_integer())
+  end
+
+  def id(iodata) do
+    {:ok, String.to_integer(IO.iodata_to_binary(iodata))}
   end
 end
 
@@ -83,7 +107,8 @@ defmodule Echo do
 
   @impl Tablespoon.Transport
   def send(%__MODULE__{ref: ref} = t, iodata) when is_reference(ref) do
-    Kernel.send(self(), {ref, {:data, IO.iodata_to_binary(iodata)}})
+    wait_time = Enum.random(1..10)
+    Process.send_after(self(), {ref, {:data, IO.iodata_to_binary(iodata)}}, wait_time)
     {:ok, t}
   end
 
