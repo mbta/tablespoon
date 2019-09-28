@@ -43,7 +43,7 @@ defmodule Tablespoon.Communicator.Btd do
       NTCIP.encode(%NTCIP{
         group: comm.group,
         pdu_type: :set,
-        request_id: 0,
+        request_id: :erlang.unique_integer(),
         message: ntcip_message(comm, q)
       })
 

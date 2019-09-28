@@ -69,7 +69,7 @@ defmodule Tablespoon.Communicator.BtdTest do
       {:ok, comm, [sent: ^query]} = Btd.stream(comm, ntcip)
       [sent_packet] = comm.transport.sent
 
-      assert {:ok, %NTCIP{group: @group, pdu_type: :set, request_id: 0, message: ^ntcip_message}} =
+      assert {:ok, %NTCIP{group: @group, pdu_type: :set, message: ^ntcip_message}} =
                NTCIP.decode(sent_packet)
     end
 
@@ -113,7 +113,7 @@ defmodule Tablespoon.Communicator.BtdTest do
       {:ok, comm, [sent: ^query]} = Btd.stream(comm, ntcip)
       [sent_packet] = comm.transport.sent
 
-      assert {:ok, %NTCIP{group: @group, pdu_type: :set, request_id: 0, message: ^ntcip_message}} =
+      assert {:ok, %NTCIP{group: @group, pdu_type: :set, message: ^ntcip_message}} =
                NTCIP.decode(sent_packet)
     end
   end
