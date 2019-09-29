@@ -110,8 +110,11 @@ defmodule Tablespoon.Protocol.PMPPTest do
   def gen_body do
     # ensure we include bytes which need to be escaped
     [
-      {1, one_of([constant(0x7E), constant(0x7D)])},
-      {5, binary()}
+      {1, constant(0x7E)},
+      {1, constant(0x7D)},
+      {1, constant(0x5E)},
+      {1, constant(0x5D)},
+      {10, binary()}
     ]
     |> frequency()
     |> list_of()

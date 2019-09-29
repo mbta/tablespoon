@@ -162,19 +162,28 @@ defmodule Tablespoon.Communicator.BtdTest do
     end
   end
 
-  defp maybe_receive_events(comm, events) do
+  defp maybe_receive_events(comm, events, ref \\ nil) do
+    ref =
+      if is_nil(ref) do
+        ref = make_ref()
+        Kernel.send(self(), ref)
+        ref
+      else
+        ref
+      end
+
     receive do
+      ^ref ->
+        {:ok, comm, events}
+
       x ->
         case Btd.stream(comm, x) do
           :unknown ->
-            maybe_receive_events(comm, events)
+            maybe_receive_events(comm, events, ref)
 
           {:ok, comm, new_events} ->
-            maybe_receive_events(comm, events ++ new_events)
+            maybe_receive_events(comm, events ++ new_events, ref)
         end
-    after
-      1 ->
-        {:ok, comm, events}
     end
   end
 

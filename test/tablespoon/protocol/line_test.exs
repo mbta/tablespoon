@@ -36,8 +36,8 @@ defmodule Tablespoon.Protocol.LineTest do
   end
 
   def end_of_line do
-    [?\r]
-    |> StreamData.string()
-    |> StreamData.map(&(&1 <> "\n"))
+    gen all(r_count <- integer(0..5)) do
+      [:binary.copy(<<?\r>>, r_count), "\n"]
+    end
   end
 end

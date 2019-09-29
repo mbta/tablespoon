@@ -145,22 +145,31 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
 
   def modified_packet(packet) do
     sized(fn size ->
-      packet = packet_modifications(:binary.bin_to_list(packet), byte_size(packet), size)
-      map(packet, &IO.iodata_to_binary/1)
+      packet_modifications(packet, size)
+      # map(packet, &IO.iodata_to_binary/1)
     end)
   end
 
-  def packet_modifications(packet, _byte_size, 0) do
+  def packet_modifications(packet, 0) do
     constant(packet)
   end
 
-  def packet_modifications(packet, byte_size, remaining) do
+  def packet_modifications("", _) do
+    constant("")
+  end
+
+  def packet_modifications(packet, size) do
     gen all(
-          index <- integer(0..(byte_size - 1)),
-          replacement <- list_of(integer(0..255)),
-          packet <- packet_modifications(packet, byte_size, remaining - 1)
+          index <- integer(0..(byte_size(packet) - 1)),
+          head <- packet_modifications(:binary.part(packet, 0, index), size - 1),
+          tail <-
+            packet_modifications(
+              :binary.part(packet, index + 1, byte_size(packet) - index - 1),
+              size - 1
+            ),
+          replacement <- StreamData.binary()
         ) do
-      List.replace_at(packet, index, replacement)
+      head <> replacement <> tail
     end
   end
 end
