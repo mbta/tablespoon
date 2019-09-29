@@ -104,6 +104,28 @@ defmodule Tablespoon.Communicator.ModemTest do
       assert comm.transport.sent == ["AT*RELAYOUT2=1\n", "AT*RELAYOUT2=1\n", "AT*RELAYOUT2=0\n"]
       assert [sent: _, sent: _, sent: _, sent: _] = events
     end
+
+    test "can handle an echo without an initial OK" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, events} = Modem.send(comm, query)
+
+      {:ok, comm, events} = process_data(comm, ["AT*RELAYOUT4=1\r\n", "OK\r\n"], events)
+      assert events == []
+
+      {:ok, _comm, events} = process_data(comm, ["OK\r\n"], events)
+      assert events == [{:sent, query}]
+    end
   end
 
   defp process_data(comm, datas, events) do

@@ -133,8 +133,9 @@ defmodule Tablespoon.Communicator.Modem do
     {:ok, comm, [sent: q]}
   end
 
-  defp handle_line(%{connected?: true} = comm, "AT*RELAYOUT" <> _) do
-    # echo of our request
+  defp handle_line(comm, "AT*RELAYOUT" <> _) do
+    # echo of our request. sometimes the modems don't send the initial OK
+    # first, so we ignore the echo either way.
     {:ok, comm, []}
   end
 
