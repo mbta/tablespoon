@@ -161,27 +161,24 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   """
   @spec decode(binary) :: {:ok, t()} | {:error, error}
   def decode(binary) when is_binary(binary) do
-    {:message, :"version-1", group_list, {:pdu, pdu_type, request_id, :noError, 0, pdu}} =
+    {:message, :"version-1", group_list, pdu} =
       :snmp_pdus.dec_message(:binary.bin_to_list(binary))
 
     group = IO.iodata_to_binary(group_list)
 
-    pdu_type =
-      case pdu_type do
-        :"set-request" -> :set
-        :"get-response" -> :response
-      end
+    case decode_pdu(pdu) do
+      {:ok, pdu_type, request_id, struct, varbind_list} ->
+        {:ok,
+         %__MODULE__{
+           group: group,
+           pdu_type: pdu_type,
+           request_id: request_id,
+           message: struct.decode_from_varbind(IO.iodata_to_binary(varbind_list))
+         }}
 
-    [{:varbind, asn1_type, :"OCTET STRING", varbind_list, 1}] = pdu
-    struct = struct_from_asn1_type(asn1_type)
-
-    {:ok,
-     %__MODULE__{
-       group: group,
-       pdu_type: pdu_type,
-       request_id: request_id,
-       message: struct.decode_from_varbind(IO.iodata_to_binary(varbind_list))
-     }}
+      {:error, _} = e ->
+        e
+    end
   rescue
     _e in [MatchError, FunctionClauseError] ->
       {:error, :invalid}
@@ -195,7 +192,7 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   def decode_id(iodata) do
     binary = IO.iodata_to_binary(iodata)
 
-    {:message, :"version-1", _group_list, {:pdu, _pdu_type, request_id, :noError, 0, _pdu}} =
+    {:message, :"version-1", _group_list, {:pdu, _pdu_type, request_id, _, _, _pdu}} =
       :snmp_pdus.dec_message(:binary.bin_to_list(binary))
 
     {:ok, request_id}
@@ -205,6 +202,22 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   catch
     :exit, _reason ->
       {:error, :invalid}
+  end
+
+  defp decode_pdu({:pdu, pdu_type, request_id, :noError, 0, pdu}) do
+    pdu_type =
+      case pdu_type do
+        :"set-request" -> :set
+        :"get-response" -> :response
+      end
+
+    [{:varbind, asn1_type, :"OCTET STRING", varbind_list, 1}] = pdu
+    struct = struct_from_asn1_type(asn1_type)
+    {:ok, pdu_type, request_id, struct, varbind_list}
+  end
+
+  defp decode_pdu({:pdu, _, _, error, _, _}) do
+    {:error, error}
   end
 
   defp as_snmp_pdu_message(message) do

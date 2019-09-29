@@ -49,6 +49,17 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
       assert NTCIP.decode(:binary.part(@encoded_sample, 0, 20)) == {:error, :invalid}
     end
 
+    test "returns an SNMP error" do
+      encoded =
+        IO.iodata_to_binary(
+          :snmp_pdus.enc_message(
+            {:message, :"version-1", [0], {:pdu, :"set-request", 0, :tooBig, 0, []}}
+          )
+        )
+
+      assert NTCIP.decode(encoded) == {:error, :tooBig}
+    end
+
     property "does not crash when receiving invalid packets" do
       check all(packet <- modified_packet(@encoded_sample)) do
         NTCIP.decode(packet)
