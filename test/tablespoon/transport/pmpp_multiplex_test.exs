@@ -15,7 +15,7 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
       receive do
         x ->
-          assert {:ok, %PMPPMultiplex{}, [{:data, ^message}]} = PMPPMultiplex.stream(t, x)
+          assert_from_one_of(x, [{t, message}])
       end
     end
 
@@ -49,6 +49,19 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       end
     end
 
+    test "closing the child returns a closed message" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 4, id_mfa: @id_mfa)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      # breaking into the struct to get the child we're connected to
+      {pid, _} = t.from
+      GenServer.stop(pid)
+
+      receive do
+        x ->
+          assert {:ok, %PMPPMultiplex{}, [:closed]} = PMPPMultiplex.stream(t, x)
+      end
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
@@ -64,19 +77,6 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
       assert [seen] = Enum.filter(pairs, &is_tuple/1)
       seen
-    end
-
-    test "closing the child returns a closed message" do
-      t = PMPPMultiplex.new(transport: Echo.new(), address: 4, id_mfa: @id_mfa)
-      {:ok, t} = PMPPMultiplex.connect(t)
-      # breaking into the struct to get the child we're connected to
-      {pid, _} = t.from
-      GenServer.stop(pid)
-
-      receive do
-        x ->
-          assert {:ok, %PMPPMultiplex{}, [:closed]} = PMPPMultiplex.stream(t, x)
-      end
     end
   end
 
