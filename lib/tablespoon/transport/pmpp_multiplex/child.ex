@@ -80,15 +80,15 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
       Kernel.send(pid, {ref, {:data, pmpp.body}})
       %{state | in_flight: in_flight}
     else
-      _ ->
+      error ->
         _ =
           Logger.warn(fn ->
             "unable to match incoming PMPP message pmpp=#{inspect(pmpp, limit: :infinity)} in_flight=#{
               inspect(state.in_flight)
-            }"
+            } error=#{inspect(error)}"
           end)
 
-        {:stop, state}
+        {:stop, :normal, state}
     end
   end
 end

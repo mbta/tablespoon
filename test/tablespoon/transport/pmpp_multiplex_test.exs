@@ -62,6 +62,21 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       end
     end
 
+    @tag :capture_log
+    test "receiving a message with an unexpected id stops the child" do
+      t =
+        PMPPMultiplex.new(transport: Echo.new(), address: 5, id_mfa: {__MODULE__, :unique_id, []})
+
+      {:ok, t} = PMPPMultiplex.connect(t)
+      message = test_message()
+      {:ok, t} = PMPPMultiplex.send(t, message)
+
+      receive do
+        x ->
+          assert {:ok, %PMPPMultiplex{}, [:closed]} = PMPPMultiplex.stream(t, x)
+      end
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
@@ -86,6 +101,10 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
   def id(iodata) do
     {:ok, String.to_integer(IO.iodata_to_binary(iodata))}
+  end
+
+  def unique_id(_) do
+    {:ok, :erlang.unique_integer()}
   end
 end
 
