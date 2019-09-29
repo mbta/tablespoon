@@ -183,6 +183,12 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
     _e in [MatchError, FunctionClauseError] ->
       {:error, :invalid}
   catch
+    :exit, {:error, {e, _}} ->
+      {:error, e}
+
+    :exit, {:error, e} ->
+      {:error, e}
+
     :exit, _reason ->
       {:error, :invalid}
   end

@@ -46,7 +46,7 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
     end
 
     test "fails if there's not enough data" do
-      assert NTCIP.decode(:binary.part(@encoded_sample, 0, 20)) == {:error, :invalid}
+      assert NTCIP.decode(:binary.part(@encoded_sample, 0, 20)) == {:error, :wrong_length}
     end
 
     test "returns an SNMP error" do
