@@ -193,21 +193,54 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
       {:error, :invalid}
   end
 
-  @doc "Return the ID of the message, or an error if we're unable to parse"
-  @spec decode_id(iodata) :: {:ok, integer} | {:error, error}
-  def decode_id(iodata) do
-    binary = IO.iodata_to_binary(iodata)
+  @doc """
+  Return the ID of the message, or an error if we're unable to parse.
 
-    {:message, :"version-1", _group_list, {:pdu, _pdu_type, request_id, _, _, _pdu}} =
-      :snmp_pdus.dec_message(:binary.bin_to_list(binary))
+  Rather than going through `:snmp_pdus`, we re-implement some of the parsing
+  ourselves in order to handle packets which do have a request ID, but are
+  otherwise too short to be valid.
+  """
+  @spec decode_id(binary) :: {:ok, integer} | {:error, error}
+  def decode_id(<<48, binary::binary>>) do
+    with {_, <<2, 1, 0, 4, rest::binary>>} <- decode_asn1_ber_length(binary),
+         {group_name_length, rest} when group_name_length < byte_size(rest) <-
+           decode_asn1_ber_length(rest),
+         # strip out some extra ignored bytes here
+         rest =
+           :binary.part(rest, group_name_length + 3, byte_size(rest) - group_name_length - 3),
+         {request_id_length, rest} <- decode_asn1_ber_length(rest),
+         request_id_bits = request_id_length * 8,
+         <<request_id::signed-integer-big-size(request_id_bits), _rest::binary>> <- rest do
+      {:ok, request_id}
+    else
+      {int, binary} when is_integer(int) and is_binary(binary) ->
+        {:error, :wrong_length}
 
-    {:ok, request_id}
+      _ ->
+        {:error, :invalid}
+    end
   rescue
     _e in [MatchError, FunctionClauseError] ->
       {:error, :invalid}
   catch
     :exit, _reason ->
       {:error, :invalid}
+  end
+
+  def decode_id(binary) when is_binary(binary) do
+    {:error, :invalid}
+  end
+
+  defp decode_asn1_ber_length(<<1::integer-1, length_bytes::big-integer-7, rest::binary>>) do
+    # if the high bit is 1, it's a two-byte length. the rest of the first
+    # byte is the number of additional octets for the length.
+    length_bits = length_bytes * 8
+    <<length::unsigned-big-integer-size(length_bits), rest::binary>> = rest
+    {length, rest}
+  end
+
+  defp decode_asn1_ber_length(<<length::unsigned-integer-big-8, rest::binary>>) do
+    {length, rest}
   end
 
   defp decode_pdu({:pdu, pdu_type, request_id, :noError, 0, pdu}) do

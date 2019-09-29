@@ -71,9 +71,16 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
     property "returns the ID of the message" do
       check all(message <- gen_message()) do
         expected = {:ok, message.request_id}
-        actual = NTCIP.decode_id(NTCIP.encode(message))
+        encoded = IO.iodata_to_binary(NTCIP.encode(message))
+        actual = NTCIP.decode_id(encoded)
         assert actual == expected
       end
+    end
+
+    test "returns an ID even for a short packet" do
+      expected = {:ok, 0}
+      actual = NTCIP.decode_id(:binary.part(@encoded_sample, 0, 40))
+      assert expected == actual
     end
 
     property "does not crash" do
