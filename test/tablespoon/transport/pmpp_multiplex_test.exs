@@ -32,7 +32,7 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
       message = test_message()
       message2 = test_message()
-      {:ok, t} = PMPPMultiplex.send(t, message)
+      {:ok, t} = PMPPMultiplex.send(t, :binary.bin_to_list(message))
       {:ok, t2} = PMPPMultiplex.send(t2, message2)
 
       pairs = [{t, message}, {t2, message2}]
@@ -99,8 +99,8 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
     Integer.to_string(:erlang.unique_integer())
   end
 
-  def id(iodata) do
-    {:ok, String.to_integer(IO.iodata_to_binary(iodata))}
+  def id(binary) when is_binary(binary) do
+    {:ok, String.to_integer(binary)}
   end
 
   def unique_id(_) do
