@@ -14,4 +14,4 @@ else
 fi
 mix credo --strict --format oneline
 env MIX_ENV=test mix do compile --force --warnings-as-errors, test --no-color
-mix dialyzer --halt-exit-status
+mix dialyzer --format dialyxir
