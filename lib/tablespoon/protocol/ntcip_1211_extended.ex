@@ -188,14 +188,10 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   @spec decode_id(binary) :: {:ok, integer} | {:error, error}
   def decode_id(<<48, binary::binary>>) do
     with {:ok, _, <<2, 1, 0, 4, rest::binary>>} <- ASN1.decode_ber_length(binary),
-         {:ok, group_name_length, rest} when group_name_length < byte_size(rest) <-
-           ASN1.decode_ber_length(rest),
-         # strip out some extra ignored bytes here
-         ignored_length = group_name_length + 3,
-         <<_ignored::binary-size(ignored_length), rest::binary>> = rest,
-         {:ok, request_id_length, rest} <- ASN1.decode_ber_length(rest),
-         request_id_bits = request_id_length * 8,
-         <<request_id::signed-integer-big-size(request_id_bits), _rest::binary>> <- rest do
+         {:ok, group_name_length, rest} <- ASN1.decode_ber_length(rest),
+         <<_ignored::binary-size(group_name_length), _pdu_tag::binary-1, rest::binary>> <- rest,
+         {:ok, _pdu_length, rest} <- ASN1.decode_ber_length(rest),
+         {:ok, request_id, _} when is_integer(request_id) <- ASN1.decode(rest) do
       {:ok, request_id}
     else
       {:error, _} = e ->
