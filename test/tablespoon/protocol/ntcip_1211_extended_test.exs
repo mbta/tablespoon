@@ -2,6 +2,7 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
   @moduledoc false
   use ExUnit.Case, async: true
   use ExUnitProperties
+  import Tablespoon.PropertyHelpers
   alias Tablespoon.Protocol.NTCIP1211Extended, as: NTCIP
 
   describe "encode/decode" do
@@ -142,34 +143,4 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
   def strategy, do: StreamData.integer(1..255)
   def time, do: StreamData.integer(1..65_535)
   def intersection_id, do: StreamData.integer(1..65_535)
-
-  def modified_packet(packet) do
-    sized(fn size ->
-      packet_modifications(packet, size)
-      # map(packet, &IO.iodata_to_binary/1)
-    end)
-  end
-
-  def packet_modifications(packet, 0) do
-    constant(packet)
-  end
-
-  def packet_modifications("", _) do
-    constant("")
-  end
-
-  def packet_modifications(packet, size) do
-    gen all(
-          index <- integer(0..(byte_size(packet) - 1)),
-          head <- packet_modifications(:binary.part(packet, 0, index), size - 1),
-          tail <-
-            packet_modifications(
-              :binary.part(packet, index + 1, byte_size(packet) - index - 1),
-              size - 1
-            ),
-          replacement <- StreamData.binary()
-        ) do
-      head <> replacement <> tail
-    end
-  end
 end
