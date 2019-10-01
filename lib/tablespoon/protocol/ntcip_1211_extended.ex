@@ -12,6 +12,7 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   prgPriorityRequest message, for the intersection ID. The cancel message
   does not also use this extension.
   """
+  alias Tablespoon.Protocol.ASN1
   @enforce_keys [:group, :pdu_type, :request_id, :message]
   defstruct @enforce_keys
 
@@ -160,37 +161,21 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   Decode a binary into an NTCIP 1211 message.
   """
   @spec decode(binary) :: {:ok, t()} | {:error, error}
-  def decode(binary) when is_binary(binary) do
-    {:message, :"version-1", group_list, pdu} =
-      :snmp_pdus.dec_message(:binary.bin_to_list(binary))
-
-    group = IO.iodata_to_binary(group_list)
-
-    case decode_pdu(pdu) do
-      {:ok, pdu_type, request_id, struct, varbind_list} ->
-        {:ok,
-         %__MODULE__{
-           group: group,
-           pdu_type: pdu_type,
-           request_id: request_id,
-           message: struct.decode_from_varbind(IO.iodata_to_binary(varbind_list))
-         }}
-
-      {:error, _} = e ->
-        e
+  def decode(<<48, _::binary>> = binary) do
+    with {:ok, [0, group, pdu], ""} <- ASN1.decode(binary),
+         {:ok, pdu_type, request_id, struct, varbind} <- decode_pdu(pdu) do
+      {:ok,
+       %__MODULE__{
+         group: group,
+         pdu_type: pdu_type,
+         request_id: request_id,
+         message: struct.decode_from_varbind(varbind)
+       }}
     end
-  rescue
-    _e in [MatchError, FunctionClauseError] ->
-      {:error, :invalid}
-  catch
-    :exit, {:error, {e, _}} ->
-      {:error, e}
+  end
 
-    :exit, {:error, e} ->
-      {:error, e}
-
-    :exit, _reason ->
-      {:error, :invalid}
+  def decode(<<_::binary>>) do
+    {:error, :invalid}
   end
 
   @doc """
@@ -202,61 +187,73 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   """
   @spec decode_id(binary) :: {:ok, integer} | {:error, error}
   def decode_id(<<48, binary::binary>>) do
-    with {_, <<2, 1, 0, 4, rest::binary>>} <- decode_asn1_ber_length(binary),
-         {group_name_length, rest} when group_name_length < byte_size(rest) <-
-           decode_asn1_ber_length(rest),
+    with {:ok, _, <<2, 1, 0, 4, rest::binary>>} <- ASN1.decode_ber_length(binary),
+         {:ok, group_name_length, rest} when group_name_length < byte_size(rest) <-
+           ASN1.decode_ber_length(rest),
          # strip out some extra ignored bytes here
-         rest =
-           :binary.part(rest, group_name_length + 3, byte_size(rest) - group_name_length - 3),
-         {request_id_length, rest} <- decode_asn1_ber_length(rest),
+         ignored_length = group_name_length + 3,
+         <<_ignored::binary-size(ignored_length), rest::binary>> = rest,
+         {:ok, request_id_length, rest} <- ASN1.decode_ber_length(rest),
          request_id_bits = request_id_length * 8,
          <<request_id::signed-integer-big-size(request_id_bits), _rest::binary>> <- rest do
       {:ok, request_id}
     else
-      {int, binary} when is_integer(int) and is_binary(binary) ->
-        {:error, :wrong_length}
+      {:error, _} = e ->
+        e
 
       _ ->
         {:error, :invalid}
     end
-  rescue
-    _e in [MatchError, FunctionClauseError] ->
-      {:error, :invalid}
-  catch
-    :exit, _reason ->
-      {:error, :invalid}
   end
 
   def decode_id(binary) when is_binary(binary) do
     {:error, :invalid}
   end
 
-  defp decode_asn1_ber_length(<<1::integer-1, length_bytes::big-integer-7, rest::binary>>) do
-    # if the high bit is 1, it's a two-byte length. the rest of the first
-    # byte is the number of additional octets for the length.
-    length_bits = length_bytes * 8
-    <<length::unsigned-big-integer-size(length_bits), rest::binary>> = rest
-    {length, rest}
+  @spec decode_pdu(term) :: {:ok, :response | :set, integer, module, binary} | {:error, error}
+  defp decode_pdu({:tag, pdu_type, [request_id, 0, 0, pdu]}) do
+    with pdu_type when pdu_type in [2, 3] <- pdu_type,
+         [[asn1_type, varbind]] <- pdu,
+         {:ok, struct} <- struct_from_asn1_type(asn1_type) do
+      pdu_type =
+        case pdu_type do
+          2 -> :response
+          3 -> :set
+        end
+
+      {:ok, pdu_type, request_id, struct, varbind}
+    else
+      {:error, _} = e ->
+        e
+
+      _ ->
+        {:error, :invalid}
+    end
   end
 
-  defp decode_asn1_ber_length(<<length::unsigned-integer-big-8, rest::binary>>) do
-    {length, rest}
+  defp decode_pdu({:tag, pdu_type, [request_id, false, false, pdu]}) do
+    # we sometimes get these slightly invalid packets, with false values
+    # instead of 0 for the errors
+    decode_pdu({:tag, pdu_type, [request_id, 0, 0, pdu]})
   end
 
-  defp decode_pdu({:pdu, pdu_type, request_id, :noError, 0, pdu}) do
-    pdu_type =
-      case pdu_type do
-        :"set-request" -> :set
-        :"get-response" -> :response
+  defp decode_pdu({:tag, _, [_request_id, error_int, _, _]}) do
+    # error codes from https://tools.ietf.org/html/rfc1157#section-4.1.1
+    error =
+      case error_int do
+        1 -> :too_big
+        2 -> :no_such_name
+        3 -> :bad_value
+        4 -> :read_only
+        5 -> :generic_error
+        e -> {:unknown, e}
       end
 
-    [{:varbind, asn1_type, :"OCTET STRING", varbind_list, 1}] = pdu
-    struct = struct_from_asn1_type(asn1_type)
-    {:ok, pdu_type, request_id, struct, varbind_list}
+    {:error, error}
   end
 
-  defp decode_pdu({:pdu, _, _, error, _, _}) do
-    {:error, error}
+  defp decode_pdu(_) do
+    {:error, :invalid}
   end
 
   defp as_snmp_pdu_message(message) do
@@ -279,8 +276,10 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
 
   for struct <- [__MODULE__.PriorityRequest, __MODULE__.PriorityCancel] do
     defp asn1_type(%{__struct__: unquote(struct)}), do: unquote(struct.asn1_type())
-    defp struct_from_asn1_type(unquote(struct.asn1_type())), do: unquote(struct)
+    defp struct_from_asn1_type(unquote(struct.asn1_type())), do: {:ok, unquote(struct)}
   end
+
+  defp struct_from_asn1_type(unknown), do: {:error, {:unknown, unknown}}
 
   defp encode_for_varbind(%{__struct__: struct} = message) do
     struct.encode_for_varbind(message)

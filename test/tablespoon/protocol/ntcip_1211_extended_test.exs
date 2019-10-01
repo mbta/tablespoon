@@ -58,13 +58,41 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
           )
         )
 
-      assert NTCIP.decode(encoded) == {:error, :tooBig}
+      assert NTCIP.decode(encoded) == {:error, :too_big}
     end
 
     property "does not crash when receiving invalid packets" do
       check all(packet <- modified_packet(@encoded_sample)) do
         NTCIP.decode(packet)
       end
+    end
+
+    test "parses a slightly invalid packet" do
+      binary =
+        <<48, 79, 2, 1, 0, 4, 13, 97, 100, 109, 105, 110, 105, 115, 116, 114, 97, 116, 111, 114,
+          162, 59, 2, 3, 3, 83, 194, 1, 1, 0, 1, 1, 0, 48, 46, 48, 44, 6, 13, 43, 6, 1, 4, 1, 137,
+          54, 4, 2, 11, 2, 1, 0, 4, 27, 1, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 49,
+          56, 51, 48, 2, 0, 4, 0, 0, 0, 0, 2, 214>>
+
+      expected =
+        {:ok,
+         %NTCIP{
+           group: "administrator",
+           message: %NTCIP.PriorityRequest{
+             id: 1,
+             intersection_id: 726,
+             strategy: 4,
+             time_of_estimated_departure: 0,
+             time_of_service_desired: 0,
+             vehicle_class: 2,
+             vehicle_class_level: 0,
+             vehicle_id: "1830"
+           },
+           pdu_type: :response,
+           request_id: 218_050
+         }} = actual = NTCIP.decode(binary)
+
+      assert actual == expected
     end
   end
 
