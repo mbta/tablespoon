@@ -28,12 +28,18 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   def handle_call({:send, key, iodata}, _from, state) do
     %{transport: transport, id_fn: id_fn, in_flight: in_flight} = state
     binary = IO.iodata_to_binary(iodata)
-    {:ok, request_id} = id_fn.(binary)
-    encoded = PMPP.encode(%PMPP{address: state.address, control: :information_poll, body: binary})
-    {:ok, transport} = Transport.send(transport, encoded)
-    in_flight = Map.put(in_flight, request_id, key)
-    state = %{state | transport: transport, in_flight: in_flight}
-    {:reply, :ok, state}
+
+    with {:ok, request_id} <- id_fn.(binary),
+         encoded =
+           PMPP.encode(%PMPP{address: state.address, control: :information_poll, body: binary}),
+         {:ok, transport} <- Transport.send(transport, encoded) do
+      in_flight = Map.put(in_flight, request_id, key)
+      state = %{state | transport: transport, in_flight: in_flight}
+      {:reply, :ok, state}
+    else
+      {:error, _} = e ->
+        {:reply, e, state}
+    end
   end
 
   @impl GenServer

@@ -98,6 +98,12 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       end
     end
 
+    test "sending errors are returned to the client" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 8, id_mfa: @id_mfa)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      assert {:error, :not_sent} = PMPPMultiplex.send(t, "-2")
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
@@ -149,14 +155,19 @@ defmodule Echo do
   def send(%__MODULE__{ref: ref} = t, iodata) when is_reference(ref) do
     binary = IO.iodata_to_binary(iodata)
 
-    if binary =~ "-1" do
-      Kernel.send(self(), {ref, :closed})
-    else
-      wait_time = Enum.random(1..10)
-      Process.send_after(self(), {ref, {:data, IO.iodata_to_binary(iodata)}}, wait_time)
-    end
+    cond do
+      binary =~ "-1" ->
+        Kernel.send(self(), {ref, :closed})
+        {:ok, t}
 
-    {:ok, t}
+      binary =~ "-2" ->
+        {:error, :not_sent}
+
+      true ->
+        wait_time = Enum.random(1..10)
+        Process.send_after(self(), {ref, {:data, IO.iodata_to_binary(iodata)}}, wait_time)
+        {:ok, t}
+    end
   end
 
   def send(%__MODULE__{}, _) do
