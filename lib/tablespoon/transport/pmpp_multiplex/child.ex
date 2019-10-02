@@ -75,6 +75,10 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
     end
   end
 
+  defp handle_message(:closed, state) do
+    {:stop, :normal, state}
+  end
+
   def handle_pmpp(pmpp, state) do
     with {:ok, request_id} <- state.id_fn.(pmpp.body),
          {{pid, ref}, in_flight} <- Map.pop(state.in_flight, request_id) do

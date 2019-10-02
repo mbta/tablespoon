@@ -87,6 +87,17 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       assert {:error, :not_started} = PMPPMultiplex.send(t, "")
     end
 
+    test "closing the upstream transport closes the multiplex transport" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 7, id_mfa: @id_mfa)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      {:ok, t} = PMPPMultiplex.send(t, "-1")
+
+      receive do
+        x ->
+          assert {:ok, %PMPPMultiplex{}, [:closed]} = PMPPMultiplex.stream(t, x)
+      end
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
@@ -106,7 +117,7 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
   end
 
   defp test_message do
-    Integer.to_string(:erlang.unique_integer())
+    Integer.to_string(:erlang.unique_integer([:positive]))
   end
 
   def id(binary) when is_binary(binary) do
@@ -136,8 +147,15 @@ defmodule Echo do
 
   @impl Tablespoon.Transport
   def send(%__MODULE__{ref: ref} = t, iodata) when is_reference(ref) do
-    wait_time = Enum.random(1..10)
-    Process.send_after(self(), {ref, {:data, IO.iodata_to_binary(iodata)}}, wait_time)
+    binary = IO.iodata_to_binary(iodata)
+
+    if binary =~ "-1" do
+      Kernel.send(self(), {ref, :closed})
+    else
+      wait_time = Enum.random(1..10)
+      Process.send_after(self(), {ref, {:data, IO.iodata_to_binary(iodata)}}, wait_time)
+    end
+
     {:ok, t}
   end
 
