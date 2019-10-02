@@ -23,6 +23,9 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+config :tablespoon,
+  configs: "priv/intersections.json"
+
 # connection configuration for the different types of Communicators
 config :tablespoon, Tablespoon.Communicator.Btd,
   transport: {Tablespoon.Transport.FakeBtd, []},

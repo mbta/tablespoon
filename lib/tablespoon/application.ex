@@ -30,19 +30,23 @@ defmodule Tablespoon.Application do
   end
 
   def configs do
-    case File.read("priv/intersections.json") do
-      {:ok, data} ->
-        data
-        |> strip_bom()
-        |> Jason.decode!()
-        |> Enum.map(&Config.from_json/1)
-
+    with path when is_binary(path) <- Application.get_env(:tablespoon, :configs),
+         {:ok, data} <- File.read("priv/intersections.json") do
+      data
+      |> strip_bom()
+      |> Jason.decode!()
+      |> Enum.map(&Config.from_json/1)
+    else
       {:error, e} ->
         _ =
           Logger.warn(fn ->
             "unable to read intersection configuration: #{inspect(e)}"
           end)
 
+        []
+
+      nil ->
+        # quietly don't load intersections, for testing
         []
     end
   end

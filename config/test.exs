@@ -9,6 +9,10 @@ config :tablespoon, TablespoonWeb.Endpoint,
 # Print only warnings and errors during test
 config :logger, level: :warn
 
+# don't load intersection configuration
+config :tablespoon,
+  configs: nil
+
 # Configure StreamData to use more rounds in CI
 if System.get_env("CI") do
   max_runs =
