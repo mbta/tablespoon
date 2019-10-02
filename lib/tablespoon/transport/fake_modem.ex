@@ -18,6 +18,7 @@ defmodule Tablespoon.Transport.FakeModem do
   defstruct [
     :ref,
     :buffer,
+    connect_error_rate: 0,
     send_error_rate: 0,
     response_error_rate: 0,
     disconnect_rate: 0,
@@ -31,10 +32,14 @@ defmodule Tablespoon.Transport.FakeModem do
 
   @impl Tablespoon.Transport
   def connect(%__MODULE__{} = t) do
-    ref = make_ref()
-    t = %{t | ref: ref, buffer: ""}
-    reply(t)
-    {:ok, t}
+    if trigger?(t.connect_error_rate) do
+      {:error, :failed_to_connect}
+    else
+      ref = make_ref()
+      t = %{t | ref: ref, buffer: ""}
+      reply(t)
+      {:ok, t}
+    end
   end
 
   @impl Tablespoon.Transport

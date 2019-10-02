@@ -6,6 +6,13 @@ defmodule Tablespoon.Transport.FakeModemTest do
 
   @packet "AT*RELAYOUT5=0\r\n"
 
+  describe "connect/1" do
+    test "when connect_error_rate is 100, always fails to connect" do
+      t = FakeModem.new(connect_error_rate: 100)
+      assert {:error, :failed_to_connect} = FakeModem.connect(t)
+    end
+  end
+
   describe "send/2" do
     test "sends a data reply" do
       t = FakeModem.new()
