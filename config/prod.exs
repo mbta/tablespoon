@@ -14,7 +14,7 @@ config :logger, :console,
 config :logger, :splunk,
   host: {:system, "SPLUNK_HOST"},
   token: {:system, "SPLUNK_TOKEN"},
-  format: "[$level]$levelpad $metadata$message",
+  format: "[$level] $metadata$message",
   metadata: [:request_id],
   level: :info
 
