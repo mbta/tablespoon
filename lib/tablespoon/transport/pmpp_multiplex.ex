@@ -33,6 +33,9 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
     with :ok <- __MODULE__.Child.send(from, iodata) do
       {:ok, t}
     end
+  catch
+    :exit, _ ->
+      {:error, :not_started}
   end
 
   def send(%__MODULE__{}, _) do

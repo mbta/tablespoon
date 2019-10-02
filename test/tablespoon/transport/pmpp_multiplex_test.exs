@@ -77,6 +77,16 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       end
     end
 
+    test "closing the child fails to send" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 6, id_mfa: @id_mfa)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      # breaking into the struct to get the child we're connected to
+      {pid, _} = t.from
+      GenServer.stop(pid)
+
+      assert {:error, :not_started} = PMPPMultiplex.send(t, "")
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
