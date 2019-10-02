@@ -18,6 +18,8 @@ defmodule Tablespoon.Transport.SSH do
   - :closed
   """
   @behaviour Tablespoon.Transport
+  @connect_timeout 5_000
+  @negotiation_timeout @connect_timeout * 2
 
   require Logger
 
@@ -35,14 +37,18 @@ defmodule Tablespoon.Transport.SSH do
            :ssh.connect(
              to_charlist(ssh.host),
              ssh.port,
-             user: to_charlist(ssh.username),
-             password: to_charlist(ssh.password),
-             silently_accept_hosts: true,
-             user_interaction: false,
-             save_accepted_host: false,
-             quiet_mode: false
+             [
+               user: to_charlist(ssh.username),
+               password: to_charlist(ssh.password),
+               silently_accept_hosts: true,
+               user_interaction: false,
+               save_accepted_host: false,
+               quiet_mode: false,
+               connect_timeout: @connect_timeout
+             ],
+             @negotiation_timeout
            ),
-         {:ok, channel_id} <- :ssh_connection.session_channel(conn_ref, 5_000),
+         {:ok, channel_id} <- :ssh_connection.session_channel(conn_ref, @connect_timeout),
          :success <- :ssh_connection.ptty_alloc(conn_ref, channel_id, []),
          :ok <- :ssh_connection.shell(conn_ref, channel_id) do
       {:ok, %{ssh | conn_ref: conn_ref, channel_id: channel_id}}
