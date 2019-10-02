@@ -77,6 +77,45 @@ defmodule Tablespoon.IntersectionTest do
     end
   end
 
+  describe "handle_continue(:connect)" do
+    setup :log_level_info
+
+    test "if we fail to connect, will fail future requests" do
+      config = %{
+        @config
+        | id: "test_connect_failure",
+          alias: "test_connect_failure",
+          communicator: Modem.new(FakeModem.new(connect_error_rate: 100))
+      }
+
+      {:ok, state, _} = Intersection.init(config)
+
+      log =
+        capture_log(fn ->
+          {:noreply, ^state} = Intersection.handle_continue(:connect, state)
+        end)
+
+      assert log =~ "unable to start"
+
+      query =
+        Query.new(
+          id: "test_response_id",
+          type: :request,
+          intersection_alias: @alias,
+          approach: :north,
+          vehicle_id: "vehicle_id",
+          event_time: 0
+        )
+
+      log =
+        capture_log(fn ->
+          {:noreply, ^state, _} = Intersection.handle_cast({:query, query}, state)
+        end)
+
+      assert log =~ "error=:not_connected"
+    end
+  end
+
   describe "handle_info(:timeout)" do
     setup do
       {:ok, state, _timeout} = Intersection.init(@config)

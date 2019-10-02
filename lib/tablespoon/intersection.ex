@@ -7,6 +7,9 @@ defmodule Tablespoon.Intersection do
   alias __MODULE__.Config
   alias Tablespoon.{Communicator, Query}
 
+  # how long to wait before trying to reconnect to an intersection
+  @reconnect_timeout 60_000
+
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.alias))
   end
@@ -45,7 +48,7 @@ defmodule Tablespoon.Intersection do
   def registry, do: __MODULE__.Registry
 
   # Server callbacks
-  defstruct [:config, time_fn: nil]
+  defstruct [:config, connected?: false, time_fn: nil]
 
   @impl GenServer
   def init(config) do
@@ -55,7 +58,12 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def handle_cast({:query, q}, %{config: config} = state) do
-    {:ok, communicator, results} = Communicator.send(config.communicator, q)
+    {:ok, communicator, results} =
+      if state.connected? do
+        Communicator.send(config.communicator, q)
+      else
+        {:ok, config.communicator, [{:failed, q, :not_connected}]}
+      end
 
     _ =
       Logger.info(fn ->
@@ -87,17 +95,30 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def handle_continue(:connect, %{config: config} = state) do
-    {:ok, communicator} = Communicator.connect(config.communicator)
-    config = %{config | communicator: communicator}
+    case Communicator.connect(config.communicator) do
+      {:ok, communicator} ->
+        config = %{config | communicator: communicator}
 
-    _ =
-      Logger.info(fn ->
-        "started Intersection id=#{config.id} alias=#{config.alias} comm=#{
-          Communicator.name(communicator)
-        }"
-      end)
+        _ =
+          Logger.info(fn ->
+            "started Intersection id=#{config.id} alias=#{config.alias} comm=#{
+              Communicator.name(communicator)
+            }"
+          end)
 
-    {:noreply, %{state | config: config}, config.warning_timeout_ms}
+        {:noreply, %{state | config: config, connected?: true}, config.warning_timeout_ms}
+
+      {:error, _} = e ->
+        _ =
+          Logger.warn(fn ->
+            "unable to start Intersection id=#{config.id} alias=#{config.alias} comm=#{
+              Communicator.name(config.communicator)
+            } error=#{inspect(e)}"
+          end)
+
+        Process.send_after(self(), :reconnect, @reconnect_timeout)
+        {:noreply, state}
+    end
   end
 
   @impl GenServer
@@ -119,6 +140,10 @@ defmodule Tablespoon.Intersection do
       end
 
     {:noreply, state, config.warning_timeout_ms}
+  end
+
+  def handle_info(:reconnect, state) do
+    {:noreply, state, {:continue, :connect}}
   end
 
   def handle_info(message, %{config: config} = state) do
