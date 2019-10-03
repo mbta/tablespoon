@@ -168,8 +168,11 @@ defmodule Tablespoon.Communicator.Btd do
   defp handle_ntcip(%{group: group} = comm, %{group: group, pdu_type: :response} = ntcip, events) do
     case Map.pop(comm.in_flight, ntcip.message.id) do
       {nil, _} ->
+        # we got a response to a message we weren't waiting for. This isn't a
+        # big deal, as we'll have already sent a :timeout reply if it was a
+        # message we wanted.
         _ =
-          Logger.warn(fn ->
+          Logger.debug(fn ->
             "unexpected response for message comm=#{inspect(comm)} message=#{inspect(ntcip)}"
           end)
 
