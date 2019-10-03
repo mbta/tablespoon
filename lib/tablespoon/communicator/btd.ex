@@ -39,8 +39,8 @@ defmodule Tablespoon.Communicator.Btd do
 
   @impl Tablespoon.Communicator
   def send(%__MODULE__{} = comm, %Query{} = q) do
-    # ensure the request ID is always two bytes
-    request_id = UniqueRangeCounter.unique_integer(:btd_request_id, 256, 65_535)
+    # ensure the request ID is always one byte
+    request_id = UniqueRangeCounter.unique_integer(:btd_request_id, -128, 127)
 
     ntcip =
       NTCIP.encode(%NTCIP{
