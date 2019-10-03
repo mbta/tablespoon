@@ -18,7 +18,7 @@ defmodule Tablespoon.Communicator.Btd do
   @behaviour Tablespoon.Communicator
 
   alias Tablespoon.Protocol.NTCIP1211Extended, as: NTCIP
-  alias Tablespoon.{Query, Transport}
+  alias Tablespoon.{Query, Transport, UniqueRangeCounter}
 
   require Logger
 
@@ -39,11 +39,14 @@ defmodule Tablespoon.Communicator.Btd do
 
   @impl Tablespoon.Communicator
   def send(%__MODULE__{} = comm, %Query{} = q) do
+    # ensure the request ID is always two bytes
+    request_id = UniqueRangeCounter.unique_integer(:btd_request_id, 256, 65_535)
+
     ntcip =
       NTCIP.encode(%NTCIP{
         group: comm.group,
         pdu_type: :set,
-        request_id: :erlang.unique_integer([:positive]),
+        request_id: request_id,
         message: ntcip_message(comm, q)
       })
 
