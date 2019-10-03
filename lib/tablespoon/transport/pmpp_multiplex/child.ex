@@ -2,7 +2,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   @moduledoc """
   GenServer responsible for maintaining a single connection and multiplexing messages.
   """
-  use GenServer
+  use GenServer, restart: :temporary
   alias Tablespoon.Protocol.PMPP
   alias Tablespoon.Transport
   require Logger
