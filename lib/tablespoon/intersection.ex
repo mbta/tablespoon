@@ -48,7 +48,13 @@ defmodule Tablespoon.Intersection do
   def registry, do: __MODULE__.Registry
 
   # Server callbacks
-  defstruct [:config, connected?: false, time_fn: nil]
+  defstruct [:config, connected?: false, time_fn: &:erlang.time/0]
+
+  @typep t :: %__MODULE__{
+           config: Config.t(),
+           connected?: boolean,
+           time_fn: (() -> :calendar.time())
+         }
 
   @impl GenServer
   def init(config) do
@@ -123,12 +129,7 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def handle_info(:timeout, %{config: config} = state) do
-    time =
-      if state.time_fn do
-        state.time_fn.()
-      else
-        :erlang.time()
-      end
+    time = state.time_fn.()
 
     _ =
       if time >= config.warning_not_before_time and time <= config.warning_not_after_time do
