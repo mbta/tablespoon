@@ -113,11 +113,11 @@ defmodule Tablespoon.Protocol.ASN1 do
     end
   end
 
-  defp decode_octet_string(<<0, rest::binary>>) do
+  def decode_octet_string(<<0, rest::binary>>) do
     {:ok, "", rest}
   end
 
-  defp decode_octet_string(binary) do
+  def decode_octet_string(binary) do
     with {:ok, length, binary} <- decode_ber_length(binary),
          <<binary::binary-size(length), rest::binary>> <- binary do
       {:ok, binary, rest}

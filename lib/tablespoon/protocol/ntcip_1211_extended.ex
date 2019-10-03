@@ -185,14 +185,25 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   ourselves in order to handle packets which do have a request ID, but are
   otherwise too short to be valid.
   """
-  @spec decode_id(binary) :: {:ok, integer} | {:error, error}
+  @spec decode_id(binary) :: {:ok, term} | {:error, error}
   def decode_id(<<48, binary::binary>>) do
     with {:ok, _, <<2, 1, 0, 4, rest::binary>>} <- ASN1.decode_ber_length(binary),
          {:ok, group_name_length, rest} <- ASN1.decode_ber_length(rest),
          <<_ignored::binary-size(group_name_length), _pdu_tag::binary-1, rest::binary>> <- rest,
          {:ok, _pdu_length, rest} <- ASN1.decode_ber_length(rest),
-         {:ok, request_id, _} when is_integer(request_id) <- ASN1.decode(rest) do
-      {:ok, request_id}
+         {:ok, request_id, rest} when is_integer(request_id) <- ASN1.decode(rest),
+         {:ok, _error, rest} <- ASN1.decode(rest),
+         {:ok, _error_index, rest} <- ASN1.decode(rest),
+         <<48, rest::binary>> <- rest,
+         {:ok, _length, rest} <- ASN1.decode_ber_length(rest),
+         <<48, rest::binary>> <- rest,
+         {:ok, _length, rest} <- ASN1.decode_ber_length(rest),
+         <<6, rest::binary>> <- rest,
+         {:ok, _, rest} <- ASN1.decode_octet_string(rest),
+         <<4, rest::binary>> <- rest,
+         {:ok, _length, rest} <- ASN1.decode_ber_length(rest),
+         <<inner_id::integer-8, _::binary>> <- rest do
+      {:ok, {request_id, inner_id}}
     else
       {:error, _} = e ->
         e
