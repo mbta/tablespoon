@@ -92,7 +92,7 @@ defmodule Tablespoon.IntersectionTest do
 
       log =
         capture_log(fn ->
-          {:noreply, ^state} = Intersection.handle_continue(:connect, state)
+          {:noreply, _state, _} = Intersection.handle_continue(:connect, state)
         end)
 
       assert log =~ "unable to start"
@@ -109,10 +109,28 @@ defmodule Tablespoon.IntersectionTest do
 
       log =
         capture_log(fn ->
-          {:noreply, ^state, _} = Intersection.handle_cast({:query, query}, state)
+          {:noreply, ^state} = Intersection.handle_cast({:query, query}, state)
         end)
 
       assert log =~ "error=:not_connected"
+    end
+
+    test "if we fail to connect multiple times, do not immediately reconnect" do
+      config = %{
+        @config
+        | id: "test_multi_connect_failure",
+          alias: "test_multi_connect_failure",
+          communicator: Modem.new(FakeModem.new(connect_error_rate: 100))
+      }
+
+      {:ok, state, _} = Intersection.init(config)
+
+      capture_log(fn ->
+        assert {:noreply, state, {:continue, :connect}} =
+                 Intersection.handle_continue(:connect, state)
+
+        assert {:noreply, _state} = Intersection.handle_continue(:connect, state)
+      end)
     end
   end
 

@@ -7,8 +7,8 @@ defmodule Tablespoon.Intersection do
   alias __MODULE__.Config
   alias Tablespoon.{Communicator, Query}
 
-  # how long to wait before trying to reconnect to an intersection
-  @reconnect_timeout 60_000
+  # how long to wait before trying to reconnect to an intersection at most: 1hr
+  @max_reconnect_timeout 3_600_000
 
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: name(config.alias))
@@ -48,7 +48,7 @@ defmodule Tablespoon.Intersection do
   def registry, do: __MODULE__.Registry
 
   # Server callbacks
-  defstruct [:config, connected?: false, time_fn: &:erlang.time/0]
+  defstruct [:config, connected?: false, failure_count: 0, time_fn: &:erlang.time/0]
 
   @typep t :: %__MODULE__{
            config: Config.t(),
@@ -121,8 +121,8 @@ defmodule Tablespoon.Intersection do
             } error=#{inspect(e)}"
           end)
 
-        Process.send_after(self(), :reconnect, @reconnect_timeout)
-        {:noreply, state}
+        state = %{state | failure_count: state.failure_count + 1}
+        state_no_reply(state)
     end
   end
 
@@ -185,7 +185,7 @@ defmodule Tablespoon.Intersection do
         } processing_time_us=#{processing_time}"
       end)
 
-    state
+    %{state | failure_count: 0}
   end
 
   def handle_results({:failed, q, error}, %{config: config} = state) do
@@ -217,14 +217,29 @@ defmodule Tablespoon.Intersection do
         } error=#{inspect(error)}"
       end)
 
-    %{state | connected?: false}
+    %{state | connected?: false, failure_count: state.failure_count + 1}
+  end
+
+  def reconnect_after(state) do
+    Process.send_after(self(), :reconnect, retry_after(state.failure_count))
+    state
+  end
+
+  defp retry_after(failure_count) do
+    after_time = trunc(500 * :math.pow(2, failure_count))
+    min(after_time, @max_reconnect_timeout)
   end
 
   defp state_no_reply(%{config: %{warning_timeout_ms: timeout}, connected?: true} = state) do
     {:noreply, state, timeout}
   end
 
-  defp state_no_reply(state) do
+  defp state_no_reply(%{failure_count: 1} = state) do
     {:noreply, state, {:continue, :connect}}
+  end
+
+  defp state_no_reply(state) do
+    state = reconnect_after(state)
+    {:noreply, state}
   end
 end
