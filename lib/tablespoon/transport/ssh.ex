@@ -95,10 +95,9 @@ defmodule Tablespoon.Transport.SSH do
         %__MODULE__{conn_ref: conn_ref, channel_id: channel_id} = ssh,
         {:ssh_cm, conn_ref, {:closed, channel_id}}
       ) do
-    with :ok <- :ssh.close(conn_ref) do
-      ssh = %{ssh | conn_ref: nil, channel_id: nil}
-      {:ok, ssh, [:closed]}
-    end
+    _ = :ssh.close(conn_ref)
+    ssh = %{ssh | conn_ref: nil, channel_id: nil}
+    {:ok, ssh, [:closed]}
   end
 
   def stream(%__MODULE__{conn_ref: conn_ref} = ssh, {:ssh_cm, conn_ref, message}) do
