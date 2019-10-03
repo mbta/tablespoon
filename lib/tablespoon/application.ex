@@ -11,6 +11,7 @@ defmodule Tablespoon.Application do
     # List all child processes to be supervised
     children = [
       Tablespoon.Transport.PMPPMultiplex.Supervisor,
+      Tablespoon.UniqueRangeCounter,
       {Tablespoon.Intersection.SuperSupervisor, configs()},
       # Start the endpoint when the application starts
       TablespoonWeb.Endpoint
