@@ -152,20 +152,14 @@ defmodule Tablespoon.Communicator.Btd do
   end
 
   defp handle_stream_results(:closed, {:ok, comm, events}) do
-    case Transport.connect(comm.transport) do
-      {:ok, transport} ->
-        failed =
-          for {q, timer} <- Map.values(comm.in_flight) do
-            _ = Process.cancel_timer(timer)
-            {:failed, q, :closed}
-          end
+    failed =
+      for {q, timer} <- Map.values(comm.in_flight) do
+        _ = Process.cancel_timer(timer)
+        {:failed, q, :closed}
+      end
 
-        comm = %{comm | transport: transport, ref: make_ref(), next_id: 1, in_flight: %{}}
-        {:halt, {:ok, %{comm | transport: transport}, events ++ failed}}
-
-      e ->
-        {:halt, e}
-    end
+    comm = %{comm | next_id: 1, in_flight: %{}}
+    {:halt, {:ok, comm, events ++ failed ++ [{:error, :closed}]}}
   end
 
   defp handle_ntcip(%{group: group} = comm, %{group: group, pdu_type: :response} = ntcip, events) do

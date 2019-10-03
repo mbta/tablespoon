@@ -141,15 +141,6 @@ defmodule Tablespoon.Communicator.ModemTest do
   end
 
   describe "stream/2" do
-    test "reconnects if the transport closes the connection" do
-      comm = Modem.new(FakeTransport.new())
-      {:ok, comm} = Modem.connect(comm)
-      {:ok, comm, []} = Modem.stream(comm, "partial line")
-      {:ok, comm, []} = Modem.stream(comm, :close)
-      assert comm.buffer == ""
-      assert comm.transport.connect_count == 2
-    end
-
     property "always returns sent or failed for a query" do
       check all(query_responses <- list_of(query_response(), min_length: 1)) do
         comm = Modem.new(FakeTransport.new())
@@ -174,10 +165,10 @@ defmodule Tablespoon.Communicator.ModemTest do
             {:ok, comm, events ++ new_events}
           end)
 
+        events = Enum.filter(events, &(elem(&1, 0) in [:sent, :failed]))
         assert length(events) == length(query_responses)
 
         for {{query, _response}, event} <- Enum.zip(query_responses, events) do
-          assert elem(event, 0) in [:sent, :failed]
           assert elem(event, 1) == query
         end
       end

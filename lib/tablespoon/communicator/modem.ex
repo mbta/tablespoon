@@ -97,18 +97,13 @@ defmodule Tablespoon.Communicator.Modem do
   end
 
   defp handle_stream_results(:closed, {:ok, comm, events}) do
-    case Transport.connect(comm.transport) do
-      {:ok, transport} ->
-        failures =
-          for q <- :queue.to_list(comm.queue) do
-            {:failed, q, :closed}
-          end
+    failures =
+      for q <- :queue.to_list(comm.queue) do
+        {:failed, q, :closed}
+      end
 
-        {:halt, {:ok, %__MODULE__{transport: transport}, events ++ failures}}
-
-      e ->
-        {:halt, e}
-    end
+    comm = %__MODULE__{transport: comm.transport}
+    {:halt, {:ok, comm, events ++ failures ++ [{:error, :closed}]}}
   end
 
   defp handle_buffer(comm, events) do

@@ -87,10 +87,9 @@ defmodule Tablespoon.Intersection do
       end)
 
     config = %{config | communicator: communicator}
-    config = Enum.reduce(results, config, &handle_results/2)
     state = %{state | config: config}
-
-    {:noreply, state, config.warning_timeout_ms}
+    state = Enum.reduce(results, state, &handle_results/2)
+    state_no_reply(state)
   end
 
   @impl GenServer
@@ -151,9 +150,9 @@ defmodule Tablespoon.Intersection do
     case Communicator.stream(config.communicator, message) do
       {:ok, communicator, results} ->
         config = %{config | communicator: communicator}
-        config = Enum.reduce(results, config, &handle_results/2)
         state = %{state | config: config}
-        {:noreply, state, config.warning_timeout_ms}
+        state = Enum.reduce(results, state, &handle_results/2)
+        state_no_reply(state)
 
       :unknown ->
         _ =
@@ -167,8 +166,8 @@ defmodule Tablespoon.Intersection do
     end
   end
 
-  @spec handle_results(Communicator.result(), Config.t()) :: Config.t()
-  def handle_results({:sent, q}, config) do
+  @spec handle_results(Communicator.result(), t()) :: t()
+  def handle_results({:sent, q}, %{config: config} = state) do
     _ =
       Logger.info(fn ->
         event_time_iso =
@@ -186,10 +185,10 @@ defmodule Tablespoon.Intersection do
         } processing_time_us=#{processing_time}"
       end)
 
-    config
+    state
   end
 
-  def handle_results({:failed, q, error}, config) do
+  def handle_results({:failed, q, error}, %{config: config} = state) do
     _ =
       Logger.info(fn ->
         event_time_iso =
@@ -207,6 +206,25 @@ defmodule Tablespoon.Intersection do
         } processing_time_us=#{processing_time} error=#{inspect(error)}"
       end)
 
-    config
+    state
+  end
+
+  def handle_results({:error, error}, %{config: config} = state) do
+    _ =
+      Logger.warn(fn ->
+        "Lost connection - id=#{config.id} alias=#{config.alias} comm=#{
+          Communicator.name(config.communicator)
+        } error=#{inspect(error)}"
+      end)
+
+    %{state | connected?: false}
+  end
+
+  defp state_no_reply(%{config: %{warning_timeout_ms: timeout}, connected?: true} = state) do
+    {:noreply, state, timeout}
+  end
+
+  defp state_no_reply(state) do
+    {:noreply, state, {:continue, :connect}}
   end
 end

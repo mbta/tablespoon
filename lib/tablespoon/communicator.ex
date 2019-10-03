@@ -12,11 +12,11 @@ defmodule Tablespoon.Communicator do
 
   @type t :: struct
   @type error :: term
-  @type result :: {:sent, Query.t()} | {:failed, Query.t(), error}
+  @type result :: {:sent, Query.t()} | {:failed, Query.t(), error} | {:error, error}
   @callback new(Transport.t(), Keyword.t()) :: t
   @callback connect(t) :: {:ok, t} | {:error, error}
   @callback send(t, Query.t()) :: {:ok, t, [result]} | {:error, error}
-  @callback stream(t, term) :: {:ok, t, [result]} | {:error, error} | :unknown
+  @callback stream(t, term) :: {:ok, t, [result]} | :unknown
 
   @doc """
   The name of the Communicator, based on the struct.

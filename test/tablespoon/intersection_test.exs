@@ -160,7 +160,12 @@ defmodule Tablespoon.IntersectionTest do
   describe "handle_results/2" do
     setup :log_level_info
 
-    test "logs a failure response" do
+    setup do
+      {:ok, state, _} = Intersection.init(@config)
+      {:ok, %{state: state}}
+    end
+
+    test "logs a failure response", %{state: state} do
       query =
         Query.new(
           id: "test_failure_id",
@@ -173,7 +178,7 @@ defmodule Tablespoon.IntersectionTest do
 
       log =
         capture_log(fn ->
-          Intersection.handle_results({:failed, query, :test_error}, @config)
+          Intersection.handle_results({:failed, query, :test_error}, state)
         end)
 
       assert log =~ "Failure - id=test_id alias=test_alias comm=Modem"

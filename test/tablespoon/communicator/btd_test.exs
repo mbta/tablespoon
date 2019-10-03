@@ -119,19 +119,6 @@ defmodule Tablespoon.Communicator.BtdTest do
   end
 
   describe "stream/2" do
-    test "reconnects if the transport closes the connection" do
-      comm =
-        Btd.new(
-          FakeTransport.new(),
-          group: @group,
-          intersection_id: @intersection_id
-        )
-
-      {:ok, comm} = Btd.connect(comm)
-      {:ok, comm, []} = Btd.stream(comm, :close)
-      assert comm.transport.connect_count == 2
-    end
-
     property "always returns a response" do
       check all(query_responses <- list_of(query_response(), min_length: 1)) do
         comm =
@@ -153,10 +140,12 @@ defmodule Tablespoon.Communicator.BtdTest do
             {:ok, comm, events ++ send_events ++ stream_events ++ receive_events}
           end)
 
-        assert length(events) == length(query_responses)
+        # closes send an extra {:error, :closed} event
+        close_count = Enum.count(query_responses, &(elem(&1, 1) == :close))
+        assert length(events) == length(query_responses) + close_count
 
-        for {_, event} <- Enum.zip(query_responses, events) do
-          assert elem(event, 0) in [:sent, :failed]
+        for event <- events do
+          assert elem(event, 0) in [:sent, :failed, :error]
         end
       end
     end
