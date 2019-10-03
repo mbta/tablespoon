@@ -23,6 +23,9 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
       {:error, {:already_started, pid}} ->
         monitor_and_set_from(t, pid)
 
+      {:error, {:bad_return_value, e}} ->
+        e
+
       e ->
         e
     end
