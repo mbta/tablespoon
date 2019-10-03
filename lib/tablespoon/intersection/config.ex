@@ -69,12 +69,13 @@ defmodule Tablespoon.Intersection.Config do
 
   defp communicator(%{"communicationType" => "Btd", "intersectionId" => intersection_id}) do
     config = Application.get_env(:tablespoon, Communicator.Btd)
-    transport = transport(config[:transport])
+    {transport_config, config} = Keyword.pop(config, :transport)
+    transport = transport(transport_config, [])
+    config = Keyword.put(config, :intersection_id, intersection_id)
 
     Communicator.Btd.new(
       transport,
-      group: config[:group],
-      intersection_id: intersection_id
+      config
     )
   end
 
