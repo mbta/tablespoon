@@ -17,7 +17,7 @@ defmodule Tablespoon.IntersectionTest do
   }
 
   setup do
-    {:ok, _pid} = Intersection.start_link(@config)
+    {:ok, _pid} = Intersection.start_link(config: @config)
     :ok
   end
 
@@ -88,7 +88,7 @@ defmodule Tablespoon.IntersectionTest do
           communicator: Modem.new(FakeModem.new(connect_error_rate: 100))
       }
 
-      {:ok, state, _} = Intersection.init(config)
+      {:ok, state, _} = Intersection.init(config: config)
 
       log =
         capture_log(fn ->
@@ -123,7 +123,7 @@ defmodule Tablespoon.IntersectionTest do
           communicator: Modem.new(FakeModem.new(connect_error_rate: 100))
       }
 
-      {:ok, state, _} = Intersection.init(config)
+      {:ok, state, _} = Intersection.init(config: config)
 
       capture_log(fn ->
         assert {:noreply, state, {:continue, :connect}} =
@@ -136,7 +136,7 @@ defmodule Tablespoon.IntersectionTest do
 
   describe "handle_info(:timeout)" do
     setup do
-      {:ok, state, _timeout} = Intersection.init(@config)
+      {:ok, state, _timeout} = Intersection.init(config: @config)
       {:ok, state: state}
     end
 
@@ -179,7 +179,7 @@ defmodule Tablespoon.IntersectionTest do
     setup :log_level_info
 
     setup do
-      {:ok, state, _} = Intersection.init(@config)
+      {:ok, state, _} = Intersection.init(config: @config)
       {:ok, %{state: state}}
     end
 
@@ -207,6 +207,53 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "processing_time_us="
       assert log =~ "test_failure_id"
       assert log =~ "error=:test_error"
+    end
+  end
+
+  describe "fuse" do
+    setup :log_level_info
+
+    test "a blown fuse results in a :blown_fuse error" do
+      intersection_alias = "test_blown_fuse"
+
+      config = %{
+        @config
+        | id: "test_blown_fuse",
+          alias: intersection_alias,
+          communicator: Modem.new(FakeModem.new(send_error_rate: 100))
+      }
+
+      # first query fails normally
+      # second query fails and melts the fuse
+      # third query fails due to the blown fuse
+      queries =
+        for id <- 1..3 do
+          Query.new(
+            id: id,
+            type: :request,
+            intersection_alias: intersection_alias,
+            approach: :north,
+            vehicle_id: "vehicle_id",
+            event_time: 0
+          )
+        end
+
+      log =
+        capture_log(fn ->
+          {:ok, _pid} =
+            Intersection.start_link(
+              config: config,
+              fuse_options: {{:standard, 1, 300_000}, {:reset, 300_000}}
+            )
+
+          for query <- queries do
+            :ok = Intersection.send_query(query)
+          end
+
+          :ok = Intersection.flush(intersection_alias)
+        end)
+
+      assert log =~ "error=:blown_fuse"
     end
   end
 

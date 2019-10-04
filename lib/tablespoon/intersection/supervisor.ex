@@ -17,7 +17,7 @@ defmodule Tablespoon.Intersection.Supervisor do
 
   def child_specs(configs) do
     for config <- configs, config.active? do
-      {Tablespoon.Intersection, config}
+      {Tablespoon.Intersection, config: config}
     end
   end
 end

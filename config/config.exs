@@ -24,7 +24,13 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 config :tablespoon,
-  configs: "priv/intersections.json"
+  configs: "priv/intersections.json",
+  fuse_options: {
+    # tolerate 5 failures in 5 minutes
+    {:standard, 5, 300_000},
+    # reset the fuse after 60 seconds
+    {:reset, 60_000}
+  }
 
 # connection configuration for the different types of Communicators
 config :tablespoon, Tablespoon.Communicator.Btd,

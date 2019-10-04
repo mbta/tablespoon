@@ -10,8 +10,9 @@ defmodule Tablespoon.Intersection do
   # how long to wait before trying to reconnect to an intersection at most: 1hr
   @max_reconnect_timeout 3_600_000
 
-  def start_link(config) do
-    GenServer.start_link(__MODULE__, config, name: name(config.alias))
+  def start_link(opts) do
+    config = Keyword.fetch!(opts, :config)
+    GenServer.start_link(__MODULE__, opts, name: name(config.alias))
   end
 
   @doc "Send the given Query to the appropriate Intersection"
@@ -34,10 +35,12 @@ defmodule Tablespoon.Intersection do
     end
   end
 
-  def child_spec(config) do
+  def child_spec(opts) do
+    config = Keyword.fetch!(opts, :config)
+
     %{
       id: {__MODULE__, config.id},
-      start: {__MODULE__, :start_link, [config]}
+      start: {__MODULE__, :start_link, [opts]}
     }
   end
 
@@ -48,28 +51,43 @@ defmodule Tablespoon.Intersection do
   def registry, do: __MODULE__.Registry
 
   # Server callbacks
-  defstruct [:config, connected?: false, connect_failure_count: 0, time_fn: &:erlang.time/0]
+  defstruct [
+    :config,
+    :fuse_name,
+    connected?: false,
+    connect_failure_count: 0,
+    time_fn: &:erlang.time/0
+  ]
 
   @typep t :: %__MODULE__{
            config: Config.t(),
+           fuse_name: atom,
            connected?: boolean,
            connect_failure_count: non_neg_integer,
            time_fn: (() -> :calendar.time())
          }
 
   @impl GenServer
-  def init(config) do
-    state = %__MODULE__{config: config}
+  def init(opts) do
+    config = Keyword.fetch!(opts, :config)
+    fuse_name = String.to_atom("intersection_fuse_#{config.alias}")
+    state = %__MODULE__{config: config, fuse_name: fuse_name}
+    install_fuse(state, Keyword.get_lazy(opts, :fuse_options, &default_fuse_options/0))
     {:ok, state, {:continue, :connect}}
   end
 
   @impl GenServer
   def handle_cast({:query, q}, %{config: config} = state) do
     {:ok, communicator, results} =
-      if state.connected? do
-        Communicator.send(config.communicator, q)
-      else
-        {:ok, config.communicator, [{:failed, q, :not_connected}]}
+      cond do
+        not state.connected? ->
+          {:ok, config.communicator, [{:failed, q, :not_connected}]}
+
+        fuse_blown?(state) ->
+          {:ok, config.communicator, [{:failed, q, :blown_fuse}]}
+
+        true ->
+          Communicator.send(config.communicator, q)
       end
 
     _ =
@@ -190,6 +208,12 @@ defmodule Tablespoon.Intersection do
   end
 
   def handle_results({:failed, q, error}, %{config: config} = state) do
+    if error not in [:closed, :not_connected, :blown_fuse] do
+      # not_connected/closed is handled by re-connecting, and a blown fuse doesn't need to
+      # melt twice.
+      fuse_melt(state)
+    end
+
     _ =
       Logger.info(fn ->
         event_time_iso =
@@ -242,5 +266,21 @@ defmodule Tablespoon.Intersection do
   defp state_no_reply(state) do
     state = reconnect_after(state)
     {:noreply, state}
+  end
+
+  defp default_fuse_options do
+    Application.get_env(:tablespoon, :fuse_options)
+  end
+
+  defp install_fuse(state, options) do
+    :ok = :fuse.install(state.fuse_name, options)
+  end
+
+  defp fuse_blown?(state) do
+    :fuse.ask(state.fuse_name, :sync) == :blown
+  end
+
+  defp fuse_melt(state) do
+    :ok = :fuse.melt(state.fuse_name)
   end
 end
