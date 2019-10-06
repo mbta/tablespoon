@@ -73,8 +73,8 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
     {:ok, t, [response]}
   end
 
-  defp child_spec(%__MODULE__{transport: transport, address: address, id_mfa: {m, f, a}} = t) do
-    {__MODULE__.Child, {transport, address, &apply(m, f, [&1 | a]), child_name(t)}}
+  defp child_spec(t) do
+    {__MODULE__.Child, {t, child_name(t)}}
   end
 
   defp child_name(%{transport: transport, address: address}) do

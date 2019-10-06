@@ -9,8 +9,8 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
 
   defstruct [:transport, :address, :id_fn, buffer: "", in_flight: %{}]
 
-  def start_link({transport, address, id_fn, name}) do
-    GenServer.start_link(__MODULE__, {transport, address, id_fn}, name: name)
+  def start_link({parent, name}) do
+    GenServer.start_link(__MODULE__, parent, name: name)
   end
 
   def send({pid, ref}, iodata) do
@@ -18,9 +18,11 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   end
 
   @impl GenServer
-  def init({transport, address, id_fn}) do
-    with {:ok, transport} <- Transport.connect(transport) do
-      {:ok, %__MODULE__{transport: transport, address: address, id_fn: id_fn}}
+  def init(parent) do
+    with {:ok, transport} <- Transport.connect(parent.transport) do
+      {m, f, a} = parent.id_mfa
+      id_fn = &apply(m, f, [&1 | a])
+      {:ok, %__MODULE__{transport: transport, address: parent.address, id_fn: id_fn}}
     end
   end
 
