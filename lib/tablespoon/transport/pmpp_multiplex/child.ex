@@ -7,7 +7,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   alias Tablespoon.Transport
   require Logger
 
-  defstruct [:transport, :address, :id_fn, buffer: "", in_flight: %{}]
+  defstruct [:transport, :address, :id_fn, :max_in_flight, buffer: "", in_flight: %{}]
 
   def start_link({parent, name}) do
     GenServer.start_link(__MODULE__, parent, name: name)
@@ -22,7 +22,14 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
     with {:ok, transport} <- Transport.connect(parent.transport) do
       {m, f, a} = parent.id_mfa
       id_fn = &apply(m, f, [&1 | a])
-      {:ok, %__MODULE__{transport: transport, address: parent.address, id_fn: id_fn}}
+
+      {:ok,
+       %__MODULE__{
+         transport: transport,
+         address: parent.address,
+         max_in_flight: parent.max_in_flight,
+         id_fn: id_fn
+       }}
     end
   end
 
@@ -63,8 +70,9 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
     end
   end
 
-  defp do_send(key, iodata, state) do
-    %{transport: transport, id_fn: id_fn, in_flight: in_flight} = state
+  defp do_send(key, iodata, %{in_flight: in_flight, max_in_flight: max_in_flight} = state)
+       when max_in_flight > map_size(in_flight) do
+    %{transport: transport, id_fn: id_fn} = state
     binary = IO.iodata_to_binary(iodata)
 
     with {:ok, request_id} <- id_fn.(binary),
@@ -75,6 +83,10 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
       state = %{state | transport: transport, in_flight: in_flight}
       {:ok, state}
     end
+  end
+
+  defp do_send(_key, _iodata, _state) do
+    {:error, :too_many_in_flight}
   end
 
   defp handle_message({:data, data}, state) do

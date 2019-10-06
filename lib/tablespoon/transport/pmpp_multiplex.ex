@@ -7,7 +7,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
   @behaviour Tablespoon.Transport
 
   @enforce_keys [:transport, :address, :id_mfa]
-  defstruct [:transport, :address, :id_mfa, :from]
+  defstruct [:transport, :address, :id_mfa, :from, max_in_flight: :infinity]
 
   @impl Tablespoon.Transport
   def new(opts) when is_list(opts) do

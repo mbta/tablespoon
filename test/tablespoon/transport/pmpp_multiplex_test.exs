@@ -104,6 +104,13 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       assert {:error, :not_sent} = PMPPMultiplex.send(t, "-2")
     end
 
+    test "max_in_flight limits the number of requests that can be active" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 9, id_mfa: @id_mfa, max_in_flight: 1)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      assert {:ok, t} = PMPPMultiplex.send(t, "-3")
+      assert {:error, :too_many_in_flight} = PMPPMultiplex.send(t, "1")
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
@@ -163,9 +170,12 @@ defmodule Echo do
       binary =~ "-2" ->
         {:error, :not_sent}
 
+      binary =~ "-3" ->
+        {:ok, t}
+
       true ->
         wait_time = Enum.random(1..10)
-        Process.send_after(self(), {ref, {:data, IO.iodata_to_binary(iodata)}}, wait_time)
+        Process.send_after(self(), {ref, {:data, binary}}, wait_time)
         {:ok, t}
     end
   end
