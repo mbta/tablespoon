@@ -52,13 +52,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
       {:ok, transport, messages} ->
         state = %{state | transport: transport}
 
-        case Enum.reduce(messages, state, &handle_message/2) do
-          %{} = state ->
-            {:noreply, state}
-
-          other ->
-            other
-        end
+        Enum.reduce(messages, state, &handle_message/2)
 
       :unknown ->
         _ =
@@ -90,27 +84,33 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   end
 
   defp handle_message({:data, data}, state) do
-    buffer = state.buffer <> data
-
-    case PMPP.decode(buffer) do
-      {:ok, pmpp, rest} ->
-        state = %{state | buffer: rest}
-        handle_pmpp(pmpp, state)
-
-      {:error, :too_short, rest} ->
-        %{state | buffer: rest}
-    end
+    handle_buffer(%{state | buffer: state.buffer <> data})
   end
 
   defp handle_message(:closed, state) do
     {:stop, :normal, state}
   end
 
+  defp handle_buffer(%{buffer: buffer} = state) when byte_size(buffer) > 0 do
+    case PMPP.decode(buffer) do
+      {:ok, pmpp, rest} ->
+        state = %{state | buffer: rest}
+        handle_pmpp(pmpp, state)
+
+      {:error, :too_short, rest} ->
+        {:noreply, %{state | buffer: rest}}
+    end
+  end
+
+  defp handle_buffer(state) do
+    {:noreply, state}
+  end
+
   def handle_pmpp(pmpp, state) do
     with {:ok, request_id} <- state.id_fn.(pmpp.body),
          {{pid, ref}, in_flight} <- Map.pop(state.in_flight, request_id) do
       Kernel.send(pid, {ref, {:data, pmpp.body}})
-      %{state | in_flight: in_flight}
+      handle_buffer(%{state | in_flight: in_flight})
     else
       error ->
         _ =

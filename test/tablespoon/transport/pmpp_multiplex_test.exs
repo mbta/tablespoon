@@ -111,6 +111,32 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       assert {:error, :too_many_in_flight} = PMPPMultiplex.send(t, "1")
     end
 
+    test "handles multiple responses in the same packet" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 10, id_mfa: @id_mfa)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      assert {:ok, t} = PMPPMultiplex.send(t, "-3")
+      assert {:ok, t} = PMPPMultiplex.send(t, "-4")
+      ref = make_ref()
+
+      Kernel.send(self(), ref)
+
+      receive do
+        ^ref ->
+          assert false, "timeout"
+
+        x ->
+          assert {:ok, %PMPPMultiplex{}, [{:data, "-3"}]} = PMPPMultiplex.stream(t, x)
+      end
+
+      receive do
+        ^ref ->
+          assert false, "timeout"
+
+        x ->
+          assert {:ok, %PMPPMultiplex{}, [{:data, "-4"}]} = PMPPMultiplex.stream(t, x)
+      end
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
@@ -146,7 +172,7 @@ defmodule Echo do
   @moduledoc "Echo transport"
   @behaviour Tablespoon.Transport
 
-  defstruct [:ref]
+  defstruct [:ref, :saved]
 
   @impl Tablespoon.Transport
   def new(_opts \\ []) do
@@ -171,6 +197,13 @@ defmodule Echo do
         {:error, :not_sent}
 
       binary =~ "-3" ->
+        t = %{t | saved: binary}
+        {:ok, t}
+
+      binary =~ "-4" ->
+        response = t.saved <> binary
+        t = %{t | saved: nil}
+        Kernel.send(self(), {ref, {:data, response}})
         {:ok, t}
 
       true ->
