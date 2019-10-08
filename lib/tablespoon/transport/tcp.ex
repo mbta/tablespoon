@@ -13,6 +13,7 @@ defmodule Tablespoon.Transport.TCP do
   """
   @behaviour Tablespoon.Transport
 
+  @tcp_opts [:binary, {:active, true}, {:nodelay, true}]
   @connect_timeout 5_000
 
   @enforce_keys [:host, :port]
@@ -27,7 +28,12 @@ defmodule Tablespoon.Transport.TCP do
   @impl Tablespoon.Transport
   def connect(%__MODULE__{} = tcp) do
     with {:ok, socket} <-
-           :gen_tcp.connect(tcp.host, tcp.port, [:binary, {:active, true}], @connect_timeout) do
+           :gen_tcp.connect(
+             tcp.host,
+             tcp.port,
+             @tcp_opts,
+             @connect_timeout
+           ) do
       tcp = %{tcp | socket: socket}
       {:ok, tcp}
     end
