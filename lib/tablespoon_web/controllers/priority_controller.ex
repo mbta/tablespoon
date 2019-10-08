@@ -29,8 +29,7 @@ defmodule TablespoonWeb.Controllers.Priority do
     |> query_from_params
     |> Intersection.send_query()
 
-    conn
-    |> send_resp(204, "")
+    send_resp(conn, 200, "")
   end
 
   @doc "Build a Tablespoon.Query from the given params"
