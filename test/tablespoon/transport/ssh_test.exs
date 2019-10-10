@@ -15,7 +15,7 @@ defmodule Tablespoon.Transport.SSHTest do
       assert {:error, _} = SSH.connect(ssh)
     end
 
-    @tag :slow
+    @tag :rebex
     test "returns {:ok, term} for a good connection" do
       ssh = new_test()
       assert {:ok, %SSH{}} = SSH.connect(ssh)
@@ -23,7 +23,7 @@ defmodule Tablespoon.Transport.SSHTest do
   end
 
   describe "stream/2" do
-    @tag :slow
+    @tag :rebex
     test "processes messages" do
       {:ok, ssh} = SSH.connect(new_test())
       {:ok, ssh} = SSH.send(ssh, "exit\r\n")
