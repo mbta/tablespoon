@@ -133,14 +133,15 @@ defmodule Tablespoon.Intersection do
         {:noreply, %{state | config: config, connected?: true}, config.warning_timeout_ms}
 
       {:error, _} = e ->
+        state = %{state | connect_failure_count: state.connect_failure_count + 1}
+
         _ =
           Logger.warn(fn ->
             "unable to start Intersection id=#{config.id} alias=#{config.alias} comm=#{
               Communicator.name(config.communicator)
-            } error=#{inspect(e)}"
+            } count=#{state.connect_failure_count} error=#{inspect(e)}"
           end)
 
-        state = %{state | connect_failure_count: state.connect_failure_count + 1}
         state_no_reply(state)
     end
   end
@@ -235,14 +236,16 @@ defmodule Tablespoon.Intersection do
   end
 
   def handle_results({:error, error}, %{config: config} = state) do
+    state = %{state | connected?: false, connect_failure_count: state.connect_failure_count + 1}
+
     _ =
       Logger.warn(fn ->
         "Lost connection - id=#{config.id} alias=#{config.alias} comm=#{
           Communicator.name(config.communicator)
-        } error=#{inspect(error)}"
+        } count=#{state.connect_failure_count} error=#{inspect(error)}"
       end)
 
-    %{state | connected?: false, connect_failure_count: state.connect_failure_count + 1}
+    state
   end
 
   def reconnect_after(state) do
