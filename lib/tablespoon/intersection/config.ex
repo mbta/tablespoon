@@ -13,7 +13,7 @@ defmodule Tablespoon.Intersection.Config do
           active?: boolean,
           warning_timeout_ms: non_neg_integer | :infinity,
           warning_not_before_time: :calendar.time() | {24, 0, 0},
-          warning_not_before_time: :calendar.time()
+          warning_not_after_time: :calendar.time()
         }
 
   @enforce_keys [:id, :alias, :communicator]

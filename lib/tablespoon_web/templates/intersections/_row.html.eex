@@ -1,0 +1,9 @@
+<td>
+  <input type="checkbox" disabled <%= if @config.active?, do: "checked" %> />
+</td>
+<td><%= @config.alias %></td>
+<td><%= @config.name %></td>
+<td><%= Tablespoon.Communicator.name(@config.communicator) %></td>
+<td><%= ms_to_minute(@config.warning_timeout_ms) %></td>
+<td><%= friendly_time(@config.warning_not_before_time) %></td>
+<td><%= friendly_time(@config.warning_not_after_time) %></td>

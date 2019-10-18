@@ -1,0 +1,21 @@
+<style type="text/css">
+ tr > * {
+     padding: .5em;
+ }
+</style>
+<table>
+  <tr>
+    <th/>
+    <th>Alias</th>
+    <th>Name</th>
+    <th>Communication</th>
+    <th>Monitoring Interval</th>
+    <th>Monitoring Start</th>
+    <th>Monitoring End<th>
+  </tr>
+  <%= for config <- @configs do %>
+    <tr>
+      <%= render "_row.html", config: config %>
+    </tr>
+  <% end %>
+</table>
