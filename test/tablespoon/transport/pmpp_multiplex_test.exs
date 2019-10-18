@@ -56,10 +56,7 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       {pid, _} = t.from
       GenServer.stop(pid)
 
-      receive do
-        x ->
-          assert {:ok, %PMPPMultiplex{}, [:closed]} = PMPPMultiplex.stream(t, x)
-      end
+      assert {:ok, %PMPPMultiplex{}, [:closed]} = receive_next_message(t)
     end
 
     @tag :capture_log
@@ -71,10 +68,7 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       message = test_message()
       {:ok, t} = PMPPMultiplex.send(t, message)
 
-      receive do
-        x ->
-          assert {:ok, %PMPPMultiplex{}, [:closed]} = PMPPMultiplex.stream(t, x)
-      end
+      assert {:ok, %PMPPMultiplex{}, [:closed]} = receive_next_message(t)
     end
 
     test "closing the child fails to send" do
@@ -92,10 +86,7 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       {:ok, t} = PMPPMultiplex.connect(t)
       {:ok, t} = PMPPMultiplex.send(t, "-1")
 
-      receive do
-        x ->
-          assert {:ok, %PMPPMultiplex{}, [:closed]} = PMPPMultiplex.stream(t, x)
-      end
+      assert {:ok, %PMPPMultiplex{}, [:closed]} = receive_next_message(t)
     end
 
     test "sending errors are returned to the client" do
@@ -116,25 +107,9 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       {:ok, t} = PMPPMultiplex.connect(t)
       assert {:ok, t} = PMPPMultiplex.send(t, "-3")
       assert {:ok, t} = PMPPMultiplex.send(t, "-4")
-      ref = make_ref()
 
-      Kernel.send(self(), ref)
-
-      receive do
-        ^ref ->
-          assert false, "timeout"
-
-        x ->
-          assert {:ok, %PMPPMultiplex{}, [{:data, "-3"}]} = PMPPMultiplex.stream(t, x)
-      end
-
-      receive do
-        ^ref ->
-          assert false, "timeout"
-
-        x ->
-          assert {:ok, %PMPPMultiplex{}, [{:data, "-4"}]} = PMPPMultiplex.stream(t, x)
-      end
+      assert {:ok, %PMPPMultiplex{}, [{:data, "-3"}]} = receive_next_message(t)
+      assert {:ok, %PMPPMultiplex{}, [{:data, "-4"}]} = receive_next_message(t)
     end
 
     defp assert_from_one_of(x, pairs) do
@@ -152,6 +127,22 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
 
       assert [seen] = Enum.filter(pairs, &is_tuple/1)
       seen
+    end
+  end
+
+  defp receive_next_message(transport) do
+    receive do
+      x ->
+        case PMPPMultiplex.stream(transport, x) do
+          :unknown ->
+            receive_next_message(transport)
+
+          return ->
+            return
+        end
+    after
+      5_000 ->
+        {:error, :timeout}
     end
   end
 
