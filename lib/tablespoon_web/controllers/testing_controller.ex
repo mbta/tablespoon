@@ -1,4 +1,4 @@
-defmodule TablespoonWeb.Controllers.Testing do
+defmodule TablespoonWeb.TestingController do
   @moduledoc """
   Renders a view to help with testing.
   """

@@ -1,6 +1,6 @@
 defmodule TablespoonWeb.Router do
   use TablespoonWeb, :router
 
-  get "/priority", TablespoonWeb.Controllers.Priority, :index
-  get "/_testing", TablespoonWeb.Controllers.Testing, :index
+  get "/priority", TablespoonWeb.PriorityController, :index
+  get "/_testing", TablespoonWeb.TestingController, :index
 end

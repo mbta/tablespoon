@@ -1,8 +1,8 @@
-defmodule TablespoonWeb.Controllers.PriorityTest do
+defmodule TablespoonWeb.PriorityControllerTest do
   @moduledoc false
   use ExUnit.Case, async: true
   use ExUnitProperties
-  import TablespoonWeb.Controllers.Priority
+  import TablespoonWeb.PriorityController
 
   describe "query_from_params/1" do
     property "params are parsed into a query" do

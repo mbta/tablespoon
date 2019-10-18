@@ -1,4 +1,4 @@
-defmodule TablespoonWeb.Controllers.Priority do
+defmodule TablespoonWeb.PriorityController do
   @moduledoc """
   Receive priority queries over HTTP.
 
