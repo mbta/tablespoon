@@ -6,7 +6,6 @@ defmodule Tablespoon.Intersection.Config do
   alias Tablespoon.Communicator
 
   @type t :: %__MODULE__{
-          id: term(),
           alias: String.t(),
           communicator: Communicator.t(),
           name: String.t() | nil,
@@ -16,7 +15,7 @@ defmodule Tablespoon.Intersection.Config do
           warning_not_after_time: :calendar.time()
         }
 
-  @enforce_keys [:id, :alias, :communicator]
+  @enforce_keys [:alias, :communicator]
   defstruct @enforce_keys ++
               [
                 name: nil,
@@ -29,7 +28,6 @@ defmodule Tablespoon.Intersection.Config do
   @doc "Parse a JSON object into a Config"
   def from_json(map) do
     %{
-      "id" => id,
       "name" => name,
       "intersectionAlias" => intersection_alias,
       "active" => active?,
@@ -48,7 +46,6 @@ defmodule Tablespoon.Intersection.Config do
       end
 
     %__MODULE__{
-      id: id,
       name: name,
       alias: intersection_alias,
       active?: active?,

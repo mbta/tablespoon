@@ -8,7 +8,6 @@ defmodule Tablespoon.IntersectionTest do
 
   @alias "test_alias"
   @config %Config{
-    id: "test_id",
     alias: @alias,
     warning_timeout_ms: 60_000,
     warning_not_before_time: {7, 0, 0},
@@ -41,7 +40,7 @@ defmodule Tablespoon.IntersectionTest do
           :ok = Intersection.flush(@alias)
         end)
 
-      assert log =~ "Query - id=test_id alias=test_alias comm=Modem"
+      assert log =~ "Query - alias=test_alias comm=Modem"
       assert log =~ "type=cancel"
       assert log =~ "v_id=vehicle_id"
       assert log =~ "approach=south"
@@ -67,7 +66,7 @@ defmodule Tablespoon.IntersectionTest do
           :ok = Intersection.flush(@alias)
         end)
 
-      assert log =~ "Response - id=test_id alias=test_alias comm=Modem"
+      assert log =~ "Response - alias=test_alias comm=Modem"
       assert log =~ "type=request"
       assert log =~ "v_id=vehicle_id"
       assert log =~ "approach=north"
@@ -83,8 +82,7 @@ defmodule Tablespoon.IntersectionTest do
     test "if we fail to connect, will fail future requests" do
       config = %{
         @config
-        | id: "test_connect_failure",
-          alias: "test_connect_failure",
+        | alias: "test_connect_failure",
           communicator: Modem.new(FakeModem.new(connect_error_rate: 100))
       }
 
@@ -118,8 +116,7 @@ defmodule Tablespoon.IntersectionTest do
     test "if we fail to connect multiple times, do not immediately reconnect" do
       config = %{
         @config
-        | id: "test_multi_connect_failure",
-          alias: "test_multi_connect_failure",
+        | alias: "test_multi_connect_failure",
           communicator: Modem.new(FakeModem.new(connect_error_rate: 100))
       }
 
@@ -199,7 +196,7 @@ defmodule Tablespoon.IntersectionTest do
           Intersection.handle_results({:failed, query, :test_error}, state)
         end)
 
-      assert log =~ "Failure - id=test_id alias=test_alias comm=Modem"
+      assert log =~ "Failure - alias=test_alias comm=Modem"
       assert log =~ "type=request"
       assert log =~ "v_id=vehicle_id"
       assert log =~ "approach=north"
@@ -218,8 +215,7 @@ defmodule Tablespoon.IntersectionTest do
 
       config = %{
         @config
-        | id: "test_blown_fuse",
-          alias: intersection_alias,
+        | alias: intersection_alias,
           communicator: Modem.new(FakeModem.new(send_error_rate: 100))
       }
 

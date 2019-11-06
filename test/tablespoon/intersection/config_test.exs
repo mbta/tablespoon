@@ -20,7 +20,6 @@ defmodule Tablespoon.Intersection.ConfigTest do
   describe "from_json" do
     test "returns a %Config{}" do
       expected = %Config{
-        id: 1,
         name: "TSP Intersection",
         alias: "BOS123",
         active?: true,
