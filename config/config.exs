@@ -15,6 +15,11 @@ config :tablespoon, TablespoonWeb.Endpoint,
   render_errors: [view: TablespoonWeb.ErrorView, accepts: ~w(json)],
   pubsub: [name: Tablespoon.PubSub, adapter: Phoenix.PubSub.PG2]
 
+config :tablespoon, TablespoonTcp.Listener,
+  server: true,
+  port: 9006,
+  event_id_to_intersection_direction: %{}
+
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",

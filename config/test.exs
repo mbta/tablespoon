@@ -6,6 +6,12 @@ config :tablespoon, TablespoonWeb.Endpoint,
   http: [port: 4002],
   server: false
 
+config :tablespoon, TablespoonTcp.Listener,
+  server: false,
+  event_id_to_intersection_direction: %{
+    1 => {"99999999", :north}
+  }
+
 # Print only warnings and errors during test
 config :logger, level: :warn
 
