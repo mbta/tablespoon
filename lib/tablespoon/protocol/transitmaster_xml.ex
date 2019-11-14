@@ -1,0 +1,181 @@
+defmodule Tablespoon.Protocol.TransitmasterXml do
+  @moduledoc """
+  Parses a Transitmaster TSP XML packet
+  """
+  @enforce_keys [:id, :type, :event_time, :event_id, :vehicle_id]
+  defstruct @enforce_keys
+
+  @type t :: %__MODULE__{
+          id: binary,
+          type: :checkin | :checkout,
+          event_time: non_neg_integer,
+          event_id: non_neg_integer,
+          vehicle_id: binary
+        }
+
+  @type error :: :unknown | :invalid_xml | :too_short
+
+  require Record
+  Record.defrecordp(:xmlElement, Record.extract(:xmlElement, from_lib: "xmerl/include/xmerl.hrl"))
+  Record.defrecordp(:xmlText, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl"))
+
+  @spec encode(t) :: iodata
+  def encode(%__MODULE__{} = tm) do
+    tag =
+      case tm.type do
+        :checkin -> :TSP_CHECKINMESSAGE
+        :checkout -> :TSP_CHECKOUTMESSAGE
+      end
+
+    xml_iodata =
+      :xmerl.export_simple(
+        [
+          {tag, [],
+           [
+             encode_tag(:GUID, tm.id),
+             encode_tag(
+               :EVENT_TIME,
+               tm.event_time |> DateTime.from_unix!(:native) |> DateTime.to_iso8601()
+             ),
+             encode_tag(:TRAFFIC_SIGNAL_EVENT_ID, Integer.to_charlist(tm.event_id)),
+             encode_tag(:VEHICLE_ID, tm.vehicle_id)
+           ]}
+        ],
+        :xmerl_xml
+      )
+
+    length = IO.iodata_length(xml_iodata)
+    length_binary = length |> Integer.to_string() |> String.pad_leading(6, "0")
+    ["TMTSPDATAHEADER", length_binary, xml_iodata]
+  end
+
+  @spec decode(binary) :: {:ok, t, binary} | {:error, error, binary}
+  def decode(binary)
+
+  def decode(<<"TMTSPDATAHEADER", size_binary::binary-6, rest::binary>> = all) do
+    with {size, ""} <- Integer.parse(size_binary),
+         <<xml_binary::binary-size(size), rest::binary>> <- rest do
+      case decode_xml_binary(xml_binary) do
+        {:ok, decoded} ->
+          {:ok, decoded, rest}
+
+        {:error, e} ->
+          {:error, e, rest}
+      end
+    else
+      {_, _} ->
+        {:error, :invalid, ""}
+
+      :error ->
+        {:error, :too_short, ""}
+
+      binary when is_binary(binary) ->
+        {:error, :too_short, all}
+    end
+  end
+
+  def decode(bin) when byte_size(bin) < 21 do
+    {:error, :too_short, bin}
+  end
+
+  def decode(bin) when is_binary(bin) do
+    {:error, :unknown, ""}
+  end
+
+  defp encode_tag(tag, value) when is_binary(value) do
+    encode_tag(tag, :binary.bin_to_list(value))
+  end
+
+  defp encode_tag(tag, value) when is_list(value) do
+    xmlElement(name: tag, content: [xmlText(value: value)])
+  end
+
+  defp decode_xml_binary(binary) do
+    case :xmerl_scan.string(:binary.bin_to_list(binary), quiet: true) do
+      {xml_term, []} ->
+        decode_xml_term(xml_term)
+
+      _ ->
+        {:error, :unknown}
+    end
+  catch
+    :exit, _ ->
+      {:error, :invalid_xml}
+  end
+
+  defp decode_xml_term(xmlElement(name: name, content: content)) do
+    type =
+      case name do
+        :TSP_CHECKOUTMESSAGE -> :checkout
+        :TSP_CHECKINMESSAGE -> :checkin
+      end
+
+    map = Enum.reduce(content, %{type: type}, &decode_xml_content/2)
+    {:ok, struct!(__MODULE__, map)}
+  end
+
+  defp decode_xml_content(xmlElement(name: :GUID, content: content), acc) do
+    id =
+      content
+      |> content_value
+      |> IO.iodata_to_binary()
+
+    Map.put(acc, :id, id)
+  end
+
+  defp decode_xml_content(xmlElement(name: :TRAFFIC_SIGNAL_EVENT_ID, content: content), acc) do
+    event_id =
+      content
+      |> content_value
+      |> list_to_integer
+
+    Map.put(acc, :event_id, event_id)
+  end
+
+  defp decode_xml_content(xmlElement(name: :EVENT_TIME, content: content), acc) do
+    {:ok, dt, _} = content |> content_value |> IO.iodata_to_binary() |> DateTime.from_iso8601()
+    unix = dt |> DateTime.to_unix() |> System.convert_time_unit(:second, :native)
+    Map.put(acc, :event_time, unix)
+  end
+
+  defp decode_xml_content(xmlElement(name: :VEHICLE_ID, content: content), acc) do
+    vehicle_id =
+      content
+      |> content_value
+      |> IO.iodata_to_binary()
+
+    Map.put(acc, :vehicle_id, vehicle_id)
+  end
+
+  defp decode_xml_content(xmlElement(), acc) do
+    acc
+  end
+
+  defp decode_xml_content(xmlText(), acc) do
+    acc
+  end
+
+  defp content_value([xmlText(value: value)]) do
+    value
+  end
+
+  defp content_value([]) do
+    []
+  end
+
+  @ascii_to_integer 48
+  defp list_to_integer([first | rest])
+       when first >= @ascii_to_integer and first < @ascii_to_integer + 10 do
+    list_to_integer(rest, first - @ascii_to_integer)
+  end
+
+  defp list_to_integer([first | rest], acc)
+       when first >= @ascii_to_integer and first < @ascii_to_integer + 10 do
+    acc = acc * 10 + first - @ascii_to_integer
+    list_to_integer(rest, acc)
+  end
+
+  defp list_to_integer([], acc) do
+    acc
+  end
+end
