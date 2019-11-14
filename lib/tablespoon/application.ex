@@ -13,7 +13,7 @@ defmodule Tablespoon.Application do
       Tablespoon.Transport.PMPPMultiplex.Supervisor,
       Tablespoon.UniqueRangeCounter,
       {Tablespoon.Intersection.SuperSupervisor, configs()},
-      # Start the endpoint when the application starts
+      TablespoonTcp.Listener,
       TablespoonWeb.Endpoint
     ]
 
