@@ -19,7 +19,25 @@ defmodule Tablespoon.Intersection do
   @spec send_query(Query.t()) :: :ok
   def send_query(%Query{} = q) do
     name = name(q.intersection_alias)
-    GenServer.cast(name, {:query, q})
+
+    if GenServer.whereis(name) do
+      GenServer.cast(name, {:query, q})
+    else
+      _ =
+        Logger.warn(fn ->
+          event_time_iso =
+            q.event_time
+            |> DateTime.from_unix!(:native)
+            |> DateTime.truncate(:second)
+            |> DateTime.to_iso8601()
+
+          "Query received for invalid Intersection alias=#{q.intersection_alias} type=#{q.type} q_id=#{
+            q.id
+          } v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso}"
+        end)
+
+      :ok
+    end
   end
 
   @doc "For testing only: ensures the messages have been processed"
