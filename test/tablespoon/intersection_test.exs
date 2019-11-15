@@ -74,6 +74,25 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "processing_time_us="
       assert log =~ "test_response_id"
     end
+
+    test "logs a warning if there's an invalid alias" do
+      query =
+        Query.new(
+          id: "test_invalid_alias",
+          type: :request,
+          intersection_alias: @alias <> "_invalid",
+          approach: :north,
+          vehicle_id: "vehicle_id",
+          event_time: 0
+        )
+
+      log =
+        capture_log(fn ->
+          :ok = Intersection.send_query(query)
+        end)
+
+      assert log =~ "Query received for invalid Intersection alias=test_alias_invalid"
+    end
   end
 
   describe "handle_continue(:connect)" do
