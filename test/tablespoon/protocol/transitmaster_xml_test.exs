@@ -54,6 +54,10 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
              }
     end
 
+    test "invalid packets are rejected" do
+      assert {:error, :invalid, ""} = TransitmasterXml.decode("invalid")
+    end
+
     property "dropping data returns :too_short error" do
       max_slice = byte_size(@data) - 1
 
