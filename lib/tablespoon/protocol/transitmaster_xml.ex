@@ -13,11 +13,13 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
           vehicle_id: binary
         }
 
-  @type error :: :unknown | :invalid_xml | :too_short
+  @type error :: :invalid | :too_short
 
   require Record
   Record.defrecordp(:xmlElement, Record.extract(:xmlElement, from_lib: "xmerl/include/xmerl.hrl"))
   Record.defrecordp(:xmlText, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl"))
+
+  @header "TMTSPDATAHEADER"
 
   @spec encode(t) :: iodata
   def encode(%__MODULE__{} = tm) do
@@ -46,13 +48,13 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
 
     length = IO.iodata_length(xml_iodata)
     length_binary = length |> Integer.to_string() |> String.pad_leading(6, "0")
-    ["TMTSPDATAHEADER", length_binary, xml_iodata]
+    [@header, length_binary, xml_iodata]
   end
 
   @spec decode(binary) :: {:ok, t, binary} | {:error, error, binary}
   def decode(binary)
 
-  def decode(<<"TMTSPDATAHEADER", size_binary::binary-6, rest::binary>> = all) do
+  def decode(<<@header, size_binary::binary-6, rest::binary>> = all) do
     with {size, ""} <- Integer.parse(size_binary),
          <<xml_binary::binary-size(size), rest::binary>> <- rest do
       case decode_xml_binary(xml_binary) do
@@ -74,12 +76,20 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
     end
   end
 
-  def decode(bin) when byte_size(bin) < 21 do
-    {:error, :too_short, bin}
+  def decode(bin) when byte_size(bin) < byte_size(@header) + 6 do
+    # if the shared prefix of the two packets isn't the header, then there's
+    # no way that the packet will match.
+    min_size = min(byte_size(bin), byte_size(@header))
+
+    if :binary.part(bin, 0, min_size) == :binary.part(@header, 0, min_size) do
+      {:error, :too_short, bin}
+    else
+      {:error, :invalid, ""}
+    end
   end
 
   def decode(bin) when is_binary(bin) do
-    {:error, :unknown, ""}
+    {:error, :invalid, ""}
   end
 
   defp encode_tag(tag, value) when is_binary(value) do
@@ -96,11 +106,11 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
         decode_xml_term(xml_term)
 
       _ ->
-        {:error, :unknown}
+        {:error, :invalid}
     end
   catch
     :exit, _ ->
-      {:error, :invalid_xml}
+      {:error, :invalid}
   end
 
   defp decode_xml_term(xmlElement(name: name, content: content)) do
