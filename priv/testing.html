@@ -7,6 +7,7 @@
         padding-bottom: 0.5rem;
       }
     </style>
+    <meta charset="utf-8"/>
   </head>
   <body>
     <h1>Tablespoon Testing</h1>
@@ -34,39 +35,44 @@
       </div>
     </form>
     <script type="application/javascript">
-      let messageId = 0;
-      const form = document.getElementById("request_form");
+      var messageId = 0;
+      var form = document.getElementById("request_form");
 
       function acceptResponse(resp) {
         alert("Success!");
       };
 
       function failResponse(fail) {
-        console.error(fail);
         alert("Failed; see console.");
+        console.error(fail);
       };
 
       function buttonClick(ev) {
         if (ev.target.type !== "button") {
           return false;
         }
-        if (!form.reportValidity()) {
-          return false;
-        };
         messageId = messageId + 1;
 
-        const params = {
+        var params = {
           messageid: messageId,
           type: ev.target.id,
-          intersection: form.elements["intersection"].value,
-          approach: form.elements["approach"].value,
-          vehicle: form.elements["vehicle"].value,
+          intersection: document.getElementById("intersection").value,
+          approach: document.getElementById("approach").value,
+          vehicle: document.getElementById("vehicle").value,
           t: Math.trunc(+(new Date()) / 1000)
         };
 
-        const query = Object.keys(params).map(key => key + '=' + params[key]).join('&');
+        var query = Object.
+            keys(params).
+            map(function(key) { return key + '=' + params[key]; }).
+            join("&");
 
-        fetch("/priority?" + query).then(acceptResponse, failResponse);
+        var req = new XMLHttpRequest();
+        req.addEventListener("load", acceptResponse);
+        req.addEventListener("error", failResponse);
+        req.addEventListener("abort", failResponse);
+        req.open("GET", "/priority?" + query);
+        req.send();
 
         return false;
       }
