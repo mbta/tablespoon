@@ -114,15 +114,15 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
   end
 
   defp decode_xml_term(xmlElement(name: name, content: content)) do
-    type =
-      case name do
-        :TSP_CHECKOUTMESSAGE -> :checkout
-        :TSP_CHECKINMESSAGE -> :checkin
-      end
-
-    map = Enum.reduce(content, %{type: type}, &decode_xml_content/2)
-    {:ok, struct!(__MODULE__, map)}
+    with {:ok, type} <- decode_name(name),
+         %{} = map <- Enum.reduce_while(content, %{type: type}, &decode_xml_content/2) do
+      {:ok, struct!(__MODULE__, map)}
+    end
   end
+
+  defp decode_name(:TSP_CHECKOUTMESSAGE), do: {:ok, :checkout}
+  defp decode_name(:TSP_CHECKINMESSAGE), do: {:ok, :checkin}
+  defp decode_name(_), do: {:error, :invalid}
 
   defp decode_xml_content(xmlElement(name: :GUID, content: content), acc) do
     id =
@@ -130,7 +130,7 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
       |> content_value
       |> IO.iodata_to_binary()
 
-    Map.put(acc, :id, id)
+    {:cont, Map.put(acc, :id, id)}
   end
 
   defp decode_xml_content(xmlElement(name: :TRAFFIC_SIGNAL_EVENT_ID, content: content), acc) do
@@ -139,13 +139,18 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
       |> content_value
       |> list_to_integer
 
-    Map.put(acc, :event_id, event_id)
+    {:cont, Map.put(acc, :event_id, event_id)}
   end
 
   defp decode_xml_content(xmlElement(name: :EVENT_TIME, content: content), acc) do
-    {:ok, dt, _} = content |> content_value |> IO.iodata_to_binary() |> DateTime.from_iso8601()
-    unix = dt |> DateTime.to_unix() |> System.convert_time_unit(:second, :native)
-    Map.put(acc, :event_time, unix)
+    case content |> content_value |> IO.iodata_to_binary() |> DateTime.from_iso8601() do
+      {:ok, dt, _} ->
+        unix = dt |> DateTime.to_unix() |> System.convert_time_unit(:second, :native)
+        {:cont, Map.put(acc, :event_time, unix)}
+
+      _ ->
+        {:halt, {:error, :invalid}}
+    end
   end
 
   defp decode_xml_content(xmlElement(name: :VEHICLE_ID, content: content), acc) do
@@ -154,15 +159,15 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
       |> content_value
       |> IO.iodata_to_binary()
 
-    Map.put(acc, :vehicle_id, vehicle_id)
+    {:cont, Map.put(acc, :vehicle_id, vehicle_id)}
   end
 
   defp decode_xml_content(xmlElement(), acc) do
-    acc
+    {:cont, acc}
   end
 
   defp decode_xml_content(xmlText(), acc) do
-    acc
+    {:cont, acc}
   end
 
   defp content_value([xmlText(value: value)]) do
