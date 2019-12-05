@@ -25,7 +25,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
 
       _ =
         Logger.info(fn ->
-          "started PMPPMultiplex.Child pid=#{self()} parent=#{inspect(parent)}"
+          "started PMPPMultiplex.Child pid=#{inspect(self())} parent=#{inspect(parent)}"
         end)
 
       {:ok,
@@ -62,7 +62,9 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
       :unknown ->
         _ =
           Logger.warn(fn ->
-            "unexpected PMPPMultiplex.Child message pid=#{self()} message=#{inspect(message)}"
+            "unexpected PMPPMultiplex.Child message pid=#{inspect(self())} message=#{
+              inspect(message)
+            }"
           end)
 
         {:noreply, state}
