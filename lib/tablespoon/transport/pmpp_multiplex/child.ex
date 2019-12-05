@@ -23,6 +23,11 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
       {m, f, a} = parent.id_mfa
       id_fn = &apply(m, f, [&1 | a])
 
+      _ =
+        Logger.info(fn ->
+          "started PMPPMultiplex.Child pid=#{self()} parent=#{inspect(parent)}"
+        end)
+
       {:ok,
        %__MODULE__{
          transport: transport,
