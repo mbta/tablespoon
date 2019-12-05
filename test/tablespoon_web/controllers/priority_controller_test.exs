@@ -1,6 +1,6 @@
 defmodule TablespoonWeb.PriorityControllerTest do
   @moduledoc false
-  use TablespoonWeb.ConnCase, async: true
+  use TablespoonWeb.ConnCase
   use ExUnitProperties
   import ExUnit.CaptureLog
   import TablespoonWeb.Router.Helpers
