@@ -99,7 +99,8 @@ defmodule Tablespoon.Communicator.BtdTest do
         vehicle_id: "1",
         vehicle_class: 2,
         vehicle_class_level: 0,
-        strategy: 3
+        strategy: 3,
+        intersection_id: @intersection_id
       }
 
       ntcip =

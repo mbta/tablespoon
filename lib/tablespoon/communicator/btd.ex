@@ -108,7 +108,8 @@ defmodule Tablespoon.Communicator.Btd do
       vehicle_id: q.vehicle_id,
       vehicle_class: 2,
       vehicle_class_level: 0,
-      strategy: ntcip_strategy(q.approach)
+      strategy: ntcip_strategy(q.approach),
+      intersection_id: comm.intersection_id
     }
   end
 

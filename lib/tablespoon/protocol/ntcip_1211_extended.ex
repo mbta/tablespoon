@@ -9,8 +9,7 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   https://tools.ietf.org/html/rfc1157
 
   The extension we use is an additional 2 bytes at the end of the
-  prgPriorityRequest message, for the intersection ID. The cancel message
-  does not also use this extension.
+  prgPriorityRequest and prgPriorityCancel message, for the intersection ID.
   """
   alias Tablespoon.Protocol.ASN1
   @enforce_keys [:group, :pdu_type, :request_id, :message]
@@ -107,8 +106,16 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
     - priorityRequestVehicleClassType           INTEGER (1..10)
     - priorityRequestVehicleClassLevel          INTEGER (1..10)
     - priorityRequestServiceStrategyNumber      INTEGER (1..255)
+    - priorityRequestIntersectionID             INTEGER (1..65535)
     """
-    @enforce_keys [:id, :vehicle_id, :vehicle_class, :vehicle_class_level, :strategy]
+    @enforce_keys [
+      :id,
+      :vehicle_id,
+      :vehicle_class,
+      :vehicle_class_level,
+      :strategy,
+      :intersection_id
+    ]
     defstruct @enforce_keys
 
     # The spec says that vehicle_class_level can't have 0 as a valid value,
@@ -118,7 +125,8 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
             vehicle_id: binary,
             vehicle_class: 1..10,
             vehicle_class_level: 0..10,
-            strategy: 1..255
+            strategy: 1..255,
+            intersection_id: 1..65_535
           }
 
     def asn1_type, do: [1, 3, 6, 1, 4, 1, 1206, 4, 2, 11, 2, 5, 0]
@@ -128,12 +136,14 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
 
       <<message.id::unsigned-integer-8, vehicle_id::binary-17,
         message.vehicle_class::unsigned-integer-8,
-        message.vehicle_class_level::unsigned-integer-8, message.strategy::unsigned-integer-8>>
+        message.vehicle_class_level::unsigned-integer-8, message.strategy::unsigned-integer-8,
+        message.intersection_id::unsigned-integer-16>>
     end
 
     def decode_from_varbind(binary) do
       <<id::unsigned-integer-8, vehicle_id::binary-17, vehicle_class::unsigned-integer-8,
-        vehicle_class_level::unsigned-integer-8, strategy::unsigned-integer-8>> = binary
+        vehicle_class_level::unsigned-integer-8, strategy::unsigned-integer-8,
+        intersection_id::unsigned-integer-16>> = binary
 
       vehicle_id = String.trim_leading(vehicle_id, " ")
 
@@ -142,7 +152,8 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
         vehicle_id: vehicle_id,
         vehicle_class: vehicle_class,
         vehicle_class_level: vehicle_class_level,
-        strategy: strategy
+        strategy: strategy,
+        intersection_id: intersection_id
       }
     end
   end
