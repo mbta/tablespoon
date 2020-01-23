@@ -2,7 +2,15 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
   @moduledoc """
   Parses a Transitmaster TSP XML packet
   """
-  @enforce_keys [:id, :type, :event_time, :event_id, :vehicle_id]
+  @enforce_keys [
+    :id,
+    :type,
+    :event_time,
+    :event_id,
+    :vehicle_id,
+    :vehicle_latitude,
+    :vehicle_longitude
+  ]
   defstruct @enforce_keys
 
   @type t :: %__MODULE__{
@@ -10,7 +18,9 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
           type: :checkin | :checkout,
           event_time: non_neg_integer,
           event_id: non_neg_integer,
-          vehicle_id: binary
+          vehicle_id: binary,
+          vehicle_latitude: float | nil,
+          vehicle_longitude: float | nil
         }
 
   @type error :: :invalid | :too_short
@@ -40,7 +50,9 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
                tm.event_time |> DateTime.from_unix!(:native) |> DateTime.to_iso8601()
              ),
              encode_tag(:TRAFFIC_SIGNAL_EVENT_ID, Integer.to_charlist(tm.event_id)),
-             encode_tag(:VEHICLE_ID, tm.vehicle_id)
+             encode_tag(:VEHICLE_ID, tm.vehicle_id),
+             encode_tag(:VEHICLE_LATITUDE, encode_optional_float(tm.vehicle_latitude)),
+             encode_tag(:VEHICLE_LONGITUDE, encode_optional_float(tm.vehicle_longitude))
            ]}
         ],
         :xmerl_xml
@@ -99,6 +111,9 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
   defp encode_tag(tag, value) when is_list(value) do
     xmlElement(name: tag, content: [xmlText(value: value)])
   end
+
+  defp encode_optional_float(nil), do: ""
+  defp encode_optional_float(float) when is_float(float), do: Float.to_string(float)
 
   defp decode_xml_binary(binary) do
     case :xmerl_scan.string(:binary.bin_to_list(binary), quiet: true) do
@@ -160,6 +175,28 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
       |> IO.iodata_to_binary()
 
     {:cont, Map.put(acc, :vehicle_id, vehicle_id)}
+  end
+
+  defp decode_xml_content(xmlElement(name: :VEHICLE_LATITUDE, content: content), acc) do
+    latitude =
+      if content == [] do
+        nil
+      else
+        content |> content_value |> :erlang.list_to_float()
+      end
+
+    {:cont, Map.put(acc, :vehicle_latitude, latitude)}
+  end
+
+  defp decode_xml_content(xmlElement(name: :VEHICLE_LONGITUDE, content: content), acc) do
+    longitude =
+      if content == [] do
+        nil
+      else
+        content |> content_value |> :erlang.list_to_float()
+      end
+
+    {:cont, Map.put(acc, :vehicle_longitude, longitude)}
   end
 
   defp decode_xml_content(xmlElement(), acc) do

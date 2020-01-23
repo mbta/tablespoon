@@ -76,7 +76,9 @@ defmodule TablespoonTcp.ProtocolTest do
         type: :checkout,
         event_time: 1000,
         event_id: 1,
-        vehicle_id: "8765"
+        vehicle_id: "8765",
+        vehicle_latitude: 1.0,
+        vehicle_longitude: -1.0
       }
 
       q = as_query(tm)

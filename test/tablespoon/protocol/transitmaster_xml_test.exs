@@ -50,7 +50,9 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
                    :native
                  ),
                event_id: 1,
-               vehicle_id: "0002"
+               vehicle_id: "0002",
+               vehicle_latitude: 42.3407551,
+               vehicle_longitude: -71.0637025
              }
     end
 
@@ -85,14 +87,18 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
           type <- one_of([constant(:checkin), constant(:checkout)]),
           event_time_seconds <- non_neg_integer(),
           event_id <- non_neg_integer(),
-          vehicle_id <- string(:alphanumeric)
+          vehicle_id <- string(:alphanumeric),
+          latitude <- one_of([constant(nil), float()]),
+          longitude <- one_of([constant(nil), float()])
         ) do
       %TransitmasterXml{
         id: id,
         type: type,
         event_time: System.convert_time_unit(event_time_seconds, :second, :native),
         event_id: event_id,
-        vehicle_id: vehicle_id
+        vehicle_id: vehicle_id,
+        vehicle_latitude: latitude,
+        vehicle_longitude: longitude
       }
     end
   end
