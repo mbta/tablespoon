@@ -87,6 +87,8 @@ defmodule TablespoonTcp.ProtocolTest do
       assert q.event_time == 1000
       assert q.intersection_alias == "99999999"
       assert q.approach == :north
+      assert q.vehicle_latitude == 1.0
+      assert q.vehicle_longitude == -1.0
     end
   end
 end

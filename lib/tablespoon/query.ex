@@ -11,12 +11,14 @@ defmodule Tablespoon.Query do
     :event_time,
     :received_at_mono
   ]
-  defstruct @enforce_keys
+  defstruct @enforce_keys ++ [:vehicle_latitude, :vehicle_longitude]
 
   @type t :: %__MODULE__{
           id: id,
           type: query_type,
           vehicle_id: vehicle_id,
+          vehicle_latitude: float | nil,
+          vehicle_longitude: float | nil,
           intersection_alias: intersection_alias,
           approach: approach,
           event_time: non_neg_integer,

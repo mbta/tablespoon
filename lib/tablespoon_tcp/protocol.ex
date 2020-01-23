@@ -87,7 +87,9 @@ defmodule TablespoonTcp.Protocol do
       intersection_alias: intersection_alias,
       approach: approach,
       vehicle_id: tm.vehicle_id,
-      event_time: tm.event_time
+      event_time: tm.event_time,
+      vehicle_latitude: tm.vehicle_latitude,
+      vehicle_longitude: tm.vehicle_longitude
     )
   end
 
