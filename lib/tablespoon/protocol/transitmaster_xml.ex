@@ -180,23 +180,35 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
   defp decode_xml_content(xmlElement(name: :VEHICLE_LATITUDE, content: content), acc) do
     latitude =
       if content == [] do
-        nil
+        {nil, ""}
       else
-        content |> content_value |> :erlang.list_to_float()
+        content |> content_value |> IO.iodata_to_binary() |> Float.parse()
       end
 
-    {:cont, Map.put(acc, :vehicle_latitude, latitude)}
+    case latitude do
+      {latitude, ""} ->
+        {:cont, Map.put(acc, :vehicle_latitude, latitude)}
+
+      _ ->
+        {:halt, {:error, :invalid}}
+    end
   end
 
   defp decode_xml_content(xmlElement(name: :VEHICLE_LONGITUDE, content: content), acc) do
     longitude =
       if content == [] do
-        nil
+        {nil, ""}
       else
-        content |> content_value |> :erlang.list_to_float()
+        content |> content_value |> IO.iodata_to_binary() |> Float.parse()
       end
 
-    {:cont, Map.put(acc, :vehicle_longitude, longitude)}
+    case longitude do
+      {longitude, ""} ->
+        {:cont, Map.put(acc, :vehicle_longitude, longitude)}
+
+      _ ->
+        {:halt, {:error, :invalid}}
+    end
   end
 
   defp decode_xml_content(xmlElement(), acc) do
