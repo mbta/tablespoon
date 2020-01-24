@@ -171,6 +171,13 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
          request_id: request_id,
          message: struct.decode_from_varbind(varbind)
        }}
+    else
+      {:error, _} = e ->
+        e
+
+      _ ->
+        # other kinds of invalid packets
+        {:error, :invalid}
     end
   end
 

@@ -61,6 +61,10 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
       assert NTCIP.decode(encoded) == {:error, :too_big}
     end
 
+    test "returns an error when the packet has additional data at the end" do
+      assert {:error, :invalid} = NTCIP.decode(@encoded_sample <> "extra")
+    end
+
     property "does not crash when receiving invalid packets" do
       check all(packet <- modified_packet(@encoded_sample)) do
         NTCIP.decode(packet)
