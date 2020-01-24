@@ -5,17 +5,25 @@ defmodule Tablespoon.PropertyHelpers do
   @doc "Randomly modify a given packet"
   def modified_packet(packet, gen_replacement \\ StreamData.binary(min_length: 0, max_length: 3))
       when is_binary(packet) do
-    sized(fn size ->
-      packet_modifications(packet, size, gen_replacement)
-    end)
+    gen_packet =
+      sized(fn size ->
+        packet_modifications(packet, size, gen_replacement)
+      end)
+
+    gen all(head <- gen_packet, tail <- gen_replacement) do
+      IO.iodata_to_binary([head, tail])
+    end
   end
 
   defp packet_modifications(packet, 0, _) do
     constant(packet)
   end
 
-  defp packet_modifications("", _, _) do
-    constant("")
+  defp packet_modifications("", _, gen_replacement) do
+    one_of([
+      constant(""),
+      gen_replacement
+    ])
   end
 
   defp packet_modifications(packet, size, gen_replacement) do
@@ -27,7 +35,7 @@ defmodule Tablespoon.PropertyHelpers do
             packet_modifications(tail, size - 1, gen_replacement),
           replacement <- gen_replacement
         ) do
-      head <> replacement <> tail
+      [head, replacement, tail]
     end
   end
 end
