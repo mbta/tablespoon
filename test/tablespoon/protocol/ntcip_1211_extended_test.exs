@@ -67,7 +67,13 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
 
     property "does not crash when receiving invalid packets" do
       check all(packet <- modified_packet(@encoded_sample)) do
-        NTCIP.decode(packet)
+        case NTCIP.decode(packet) do
+          {:ok, _} ->
+            :ok
+
+          {:error, _} ->
+            :ok
+        end
       end
     end
 
@@ -118,7 +124,13 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
 
     property "does not crash" do
       check all(packet <- modified_packet(@encoded_sample)) do
-        NTCIP.decode_id(packet)
+        case NTCIP.decode_id(packet) do
+          {:ok, _} ->
+            :ok
+
+          {:error, _} ->
+            :ok
+        end
       end
     end
   end

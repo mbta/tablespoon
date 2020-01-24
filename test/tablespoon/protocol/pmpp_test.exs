@@ -81,7 +81,13 @@ defmodule Tablespoon.Protocol.PMPPTest do
 
     property "does not crash on any input" do
       check all(data <- gen_body()) do
-        PMPP.decode(data)
+        case PMPP.decode(data) do
+          {:ok, _, _} ->
+            :ok
+
+          {:error, _, _} ->
+            :ok
+        end
       end
     end
   end

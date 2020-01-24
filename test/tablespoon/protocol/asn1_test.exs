@@ -41,7 +41,13 @@ defmodule Tablespoon.Protocol.ASN1Test do
 
     property "does not crash when receiving invalid packets" do
       check all(packet <- modified_packet(@encoded_sample)) do
-        decode(packet)
+        case decode(packet) do
+          {:ok, _, _} ->
+            :ok
+
+          {:error, _} ->
+            :ok
+        end
       end
     end
   end

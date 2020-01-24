@@ -76,7 +76,13 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
 
     property "does not crash" do
       check all(packet <- modified_packet(@data, string(:ascii, min_length: 0, max_length: 3))) do
-        TransitmasterXml.decode(packet)
+        case TransitmasterXml.decode(packet) do
+          {:ok, _} ->
+            :ok
+
+          {:error, _, _} ->
+            :ok
+        end
       end
     end
   end
