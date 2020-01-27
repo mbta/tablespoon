@@ -77,10 +77,10 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
     property "does not crash" do
       check all(packet <- modified_packet(@data, string(:ascii, min_length: 0, max_length: 3))) do
         case TransitmasterXml.decode(packet) do
-          {:ok, _} ->
+          {:ok, %TransitmasterXml{}, bin} when is_binary(bin) ->
             :ok
 
-          {:error, _, _} ->
+          {:error, _, bin} when is_binary(bin) ->
             :ok
         end
       end
