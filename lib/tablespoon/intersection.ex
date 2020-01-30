@@ -118,7 +118,9 @@ defmodule Tablespoon.Intersection do
 
         "Query - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} type=#{
           q.type
-        } q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso}"
+        } q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} lat=#{
+          q.vehicle_latitude
+        } lon=#{q.vehicle_longitude}"
       end)
 
     config = %{config | communicator: communicator}
@@ -216,7 +218,7 @@ defmodule Tablespoon.Intersection do
           q.type
         } q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} processing_time_us=#{
           processing_time
-        }"
+        } lat=#{q.vehicle_latitude} lon=#{q.vehicle_longitude}"
       end)
 
     %{state | connect_failure_count: 0}
@@ -243,7 +245,7 @@ defmodule Tablespoon.Intersection do
           q.type
         } q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} processing_time_us=#{
           processing_time
-        } error=#{inspect(error)}"
+        } error=#{inspect(error)} lat=#{q.vehicle_latitude} lon=#{q.vehicle_longitude}"
       end)
 
     state

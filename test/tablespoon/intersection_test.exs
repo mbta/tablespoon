@@ -31,6 +31,8 @@ defmodule Tablespoon.IntersectionTest do
           intersection_alias: @alias,
           approach: :south,
           vehicle_id: "vehicle_id",
+          vehicle_latitude: -1.2,
+          vehicle_longitude: 3.4,
           event_time: 0
         )
 
@@ -45,6 +47,8 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "v_id=vehicle_id"
       assert log =~ "approach=south"
       assert log =~ "event_time=1970-01-01T00:00:00Z"
+      assert log =~ "lat=-1.2"
+      assert log =~ "lon=3.4"
       assert log =~ "test_query_id"
     end
 
@@ -56,6 +60,8 @@ defmodule Tablespoon.IntersectionTest do
           intersection_alias: @alias,
           approach: :north,
           vehicle_id: "vehicle_id",
+          vehicle_latitude: -1.2,
+          vehicle_longitude: 3.4,
           event_time: 0
         )
 
@@ -72,6 +78,8 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "approach=north"
       assert log =~ "event_time=1970-01-01T00:00:00Z"
       assert log =~ "processing_time_us="
+      assert log =~ "lat=-1.2"
+      assert log =~ "lon=3.4"
       assert log =~ "test_response_id"
     end
 
@@ -207,6 +215,8 @@ defmodule Tablespoon.IntersectionTest do
           intersection_alias: @alias,
           approach: :north,
           vehicle_id: "vehicle_id",
+          vehicle_latitude: -1.2,
+          vehicle_longitude: 3.4,
           event_time: 0
         )
 
@@ -221,6 +231,8 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "approach=north"
       assert log =~ "event_time=1970-01-01T00:00:00Z"
       assert log =~ "processing_time_us="
+      assert log =~ "lat=-1.2"
+      assert log =~ "lon=3.4"
       assert log =~ "test_failure_id"
       assert log =~ "error=:test_error"
     end
