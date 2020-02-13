@@ -80,15 +80,28 @@ defmodule Tablespoon.Intersection.Config do
     config = Application.get_env(:tablespoon, Communicator.Modem)
 
     additional_opts = [
-      host: map["ipAddress"],
-      port: map["port"],
-      username: map["userName"],
-      password: map["password"]
+      host: Map.fetch!(map, "ipAddress"),
+      port: Map.fetch!(map, "port"),
+      username: Map.fetch!(map, "userName"),
+      password: Map.fetch!(map, "password")
     ]
 
     transport = transport(config[:transport], additional_opts)
 
     Communicator.Modem.new(transport)
+  end
+
+  defp communicator(%{"communicationType" => "ModemTcp"} = map) do
+    config = Application.get_env(:tablespoon, Communicator.ModemTcp)
+
+    additional_opts = [
+      host: Map.fetch!(map, "ipAddress"),
+      port: Map.fetch!(map, "port")
+    ]
+
+    transport = transport(config[:transport], additional_opts)
+
+    Communicator.Modem.new(transport, expect_ok?: false)
   end
 
   defp transport({transport, transport_opts}, additional_opts \\ []) do

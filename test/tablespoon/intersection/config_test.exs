@@ -9,12 +9,14 @@ defmodule Tablespoon.Intersection.ConfigTest do
   @sample_json %{
     "id" => 1,
     "name" => "TSP Intersection",
-    "communicationType" => "Modem",
+    "communicationType" => "ModemTcp",
     "intersectionAlias" => "BOS123",
     "active" => true,
     "monitoringInterval" => 240,
     "startTime" => "07:00:00",
-    "endTime" => "00:00:00"
+    "endTime" => "00:00:00",
+    "ipAddress" => "0.0.0.0",
+    "port" => 0
   }
 
   describe "from_json" do
@@ -26,7 +28,7 @@ defmodule Tablespoon.Intersection.ConfigTest do
         warning_timeout_ms: 240 * 60 * 1000,
         warning_not_before_time: {7, 0, 0},
         warning_not_after_time: {24, 0, 0},
-        communicator: Modem.new(FakeModem.new())
+        communicator: Modem.new(FakeModem.new(), expect_ok?: false)
       }
 
       actual = from_json(@sample_json)
