@@ -4,7 +4,7 @@ defmodule Tablespoon.Communicator.Modem do
 
   The communication is line-based.
 
-  When we first connect, we expect an "OK" line.
+  When we first connect, we expect an "OK" line, unless passed the "expect_ok?: false" option is passed
 
   To request priority at an intersection, we set one of the relays to 1:
 
@@ -32,20 +32,31 @@ defmodule Tablespoon.Communicator.Modem do
                 buffer: "",
                 queue: :queue.new(),
                 approach_counts: %{:north => 0, :east => 0, :south => 0, :west => 0},
+                expect_ok?: true,
                 connected?: false
               ]
 
   alias Tablespoon.{Protocol.Line, Query, Transport}
 
   @impl Tablespoon.Communicator
-  def new(transport, _opts \\ []) do
-    %__MODULE__{transport: transport}
+  def new(transport, opts \\ []) do
+    expect_ok? = Keyword.get(opts, :expect_ok?, true)
+    %__MODULE__{transport: transport, expect_ok?: expect_ok?}
   end
 
   @impl Tablespoon.Communicator
   def connect(%__MODULE__{} = comm) do
     with {:ok, transport} <- Transport.connect(comm.transport) do
-      {:ok, %{comm | transport: transport}}
+      comm = %{comm | transport: transport}
+
+      comm =
+        if comm.expect_ok? do
+          comm
+        else
+          %{comm | connected?: true}
+        end
+
+      {:ok, comm}
     end
   end
 
@@ -102,7 +113,7 @@ defmodule Tablespoon.Communicator.Modem do
         {:failed, q, :closed}
       end
 
-    comm = %__MODULE__{transport: comm.transport}
+    comm = %__MODULE__{transport: comm.transport, expect_ok?: comm.expect_ok?}
     {:halt, {:ok, comm, events ++ failures ++ [{:error, :closed}]}}
   end
 

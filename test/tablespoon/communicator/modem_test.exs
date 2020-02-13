@@ -27,6 +27,25 @@ defmodule Tablespoon.Communicator.ModemTest do
       assert comm.transport.sent == ["AT*RELAYOUT4=1\n"]
     end
 
+    test "does not require an initial OK if expect_ok? is false" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      comm = Modem.new(FakeTransport.new(), expect_ok?: false)
+      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, events} = Modem.send(comm, query)
+      {:ok, comm, events} = process_data(comm, ["OK", "\r", "\r\n", "\r\n"], events)
+      assert events == [{:sent, query}]
+      assert comm.transport.sent == ["AT*RELAYOUT4=1\n"]
+    end
+
     test "handles errors in the response" do
       query =
         Query.new(
