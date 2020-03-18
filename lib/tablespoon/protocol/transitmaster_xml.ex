@@ -123,6 +123,9 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
       _ ->
         {:error, :invalid}
     end
+  rescue
+    FunctionClauseError ->
+      {:error, :invalid}
   catch
     :exit, _ ->
       {:error, :invalid}
