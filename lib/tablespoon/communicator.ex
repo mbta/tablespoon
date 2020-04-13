@@ -14,7 +14,7 @@ defmodule Tablespoon.Communicator do
   @type error :: term
   @type result :: {:sent, Query.t()} | {:failed, Query.t(), error} | {:error, error}
   @callback new(Transport.t(), Keyword.t()) :: t
-  @callback connect(t) :: {:ok, t} | {:error, error}
+  @callback connect(t) :: {:ok, t, [result]} | {:error, error}
   @callback send(t, Query.t()) :: {:ok, t, [result]} | {:error, error}
   @callback stream(t, term) :: {:ok, t, [result]} | :unknown
 
@@ -31,7 +31,7 @@ defmodule Tablespoon.Communicator do
     |> List.last()
   end
 
-  @spec connect(t) :: {:ok, t} | {:error, error}
+  @spec connect(t) :: {:ok, t, [result]} | {:error, error}
   def connect(%{__struct__: module} = comm) do
     module.connect(comm)
   end

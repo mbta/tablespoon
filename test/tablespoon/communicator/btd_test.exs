@@ -44,7 +44,7 @@ defmodule Tablespoon.Communicator.BtdTest do
           intersection_id: @intersection_id
         )
 
-      {:ok, comm} = Btd.connect(comm)
+      {:ok, comm, []} = Btd.connect(comm)
       {:ok, comm, []} = Btd.send(comm, query)
 
       ntcip_message = %NTCIP.PriorityRequest{
@@ -91,7 +91,7 @@ defmodule Tablespoon.Communicator.BtdTest do
           intersection_id: @intersection_id
         )
 
-      {:ok, comm} = Btd.connect(comm)
+      {:ok, comm, []} = Btd.connect(comm)
       {:ok, comm, []} = Btd.send(comm, query)
 
       ntcip_message = %NTCIP.PriorityCancel{
@@ -130,7 +130,7 @@ defmodule Tablespoon.Communicator.BtdTest do
             timeout: 0
           )
 
-        {:ok, comm} = Btd.connect(comm)
+        {:ok, comm, []} = Btd.connect(comm)
 
         {:ok, _comm, events} =
           Enum.reduce(query_responses, {:ok, comm, []}, fn {query, response},

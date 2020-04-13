@@ -137,29 +137,34 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def handle_continue(:connect, %{config: config} = state) do
-    case Communicator.connect(config.communicator) do
-      {:ok, communicator} ->
-        config = %{config | communicator: communicator}
+    state =
+      case Communicator.connect(config.communicator) do
+        {:ok, communicator, results} ->
+          config = %{config | communicator: communicator}
+          state = %{state | config: config, connected?: true}
+          state = Enum.reduce(results, state, &handle_results/2)
 
-        _ =
-          Logger.info(fn ->
-            "started Intersection alias=#{config.alias} comm=#{Communicator.name(communicator)}"
-          end)
+          _ =
+            Logger.info(fn ->
+              "started Intersection alias=#{config.alias} comm=#{Communicator.name(communicator)}"
+            end)
 
-        {:noreply, %{state | config: config, connected?: true}, config.warning_timeout_ms}
+          state
 
-      {:error, _} = e ->
-        state = %{state | connect_failure_count: state.connect_failure_count + 1}
+        {:error, _} = e ->
+          state = %{state | connect_failure_count: state.connect_failure_count + 1}
 
-        _ =
-          Logger.warn(fn ->
-            "unable to start Intersection alias=#{config.alias} comm=#{
-              Communicator.name(config.communicator)
-            } count=#{state.connect_failure_count} error=#{inspect(e)}"
-          end)
+          _ =
+            Logger.warn(fn ->
+              "unable to start Intersection alias=#{config.alias} comm=#{
+                Communicator.name(config.communicator)
+              } count=#{state.connect_failure_count} error=#{inspect(e)}"
+            end)
 
-        state_no_reply(state)
-    end
+          state
+      end
+
+    state_no_reply(state)
   end
 
   @impl GenServer
