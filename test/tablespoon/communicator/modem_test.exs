@@ -20,7 +20,7 @@ defmodule Tablespoon.Communicator.ModemTest do
         )
 
       comm = Modem.new(FakeTransport.new())
-      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, []} = Modem.connect(comm)
       {:ok, comm, events} = Modem.send(comm, query)
       {:ok, comm, events} = process_data(comm, ["OK", "\r", "\r\n", "\r\n", "OK\r\n"], events)
       assert events == [{:sent, query}]
@@ -39,7 +39,7 @@ defmodule Tablespoon.Communicator.ModemTest do
         )
 
       comm = Modem.new(FakeTransport.new(), expect_ok?: false)
-      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, []} = Modem.connect(comm)
       {:ok, comm, events} = Modem.send(comm, query)
       {:ok, comm, events} = process_data(comm, ["OK", "\r", "\r\n", "\r\n"], events)
       assert events == [{:sent, query}]
@@ -58,7 +58,7 @@ defmodule Tablespoon.Communicator.ModemTest do
         )
 
       comm = Modem.new(FakeTransport.new())
-      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, []} = Modem.connect(comm)
       {:ok, comm, events} = Modem.send(comm, query)
       {:ok, _comm, events} = process_data(comm, ["OK\n", "ERROR\n"], events)
       assert events == [{:failed, query, :error}]
@@ -86,7 +86,7 @@ defmodule Tablespoon.Communicator.ModemTest do
         )
 
       comm = Modem.new(FakeTransport.new())
-      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, []} = Modem.connect(comm)
       {:ok, comm, events} = Modem.send(comm, request)
       {:ok, comm, events2} = Modem.send(comm, cancel)
       {:ok, comm, events} = process_data(comm, ["OK\nOK\nOK\n"], events ++ events2)
@@ -111,7 +111,7 @@ defmodule Tablespoon.Communicator.ModemTest do
         end
 
       comm = Modem.new(FakeTransport.new())
-      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, []} = Modem.connect(comm)
 
       {:ok, comm, events} =
         Enum.reduce(queries, {:ok, comm, []}, fn q, {:ok, comm, events} ->
@@ -136,7 +136,7 @@ defmodule Tablespoon.Communicator.ModemTest do
         )
 
       comm = Modem.new(FakeTransport.new())
-      {:ok, comm} = Modem.connect(comm)
+      {:ok, comm, []} = Modem.connect(comm)
       {:ok, comm, events} = Modem.send(comm, query)
 
       {:ok, comm, events} = process_data(comm, ["AT*RELAYOUT4=1\r\n", "OK\r\n"], events)
@@ -163,7 +163,7 @@ defmodule Tablespoon.Communicator.ModemTest do
     property "always returns sent or failed for a query" do
       check all(query_responses <- list_of(query_response(), min_length: 1)) do
         comm = Modem.new(FakeTransport.new())
-        {:ok, comm} = Modem.connect(comm)
+        {:ok, comm, []} = Modem.connect(comm)
         {:ok, comm, []} = Modem.stream(comm, "OK\n")
 
         {:ok, _comm, events} =

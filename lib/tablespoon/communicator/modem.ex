@@ -56,7 +56,7 @@ defmodule Tablespoon.Communicator.Modem do
           %{comm | connected?: true}
         end
 
-      {:ok, comm}
+      {:ok, comm, []}
     end
   end
 

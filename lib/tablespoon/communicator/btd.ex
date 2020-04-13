@@ -33,7 +33,7 @@ defmodule Tablespoon.Communicator.Btd do
   @impl Tablespoon.Communicator
   def connect(%__MODULE__{} = comm) do
     with {:ok, transport} <- Transport.connect(comm.transport) do
-      {:ok, %{comm | transport: transport}}
+      {:ok, %{comm | transport: transport}, []}
     end
   end
 
