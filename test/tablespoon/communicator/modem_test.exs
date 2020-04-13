@@ -124,6 +124,50 @@ defmodule Tablespoon.Communicator.ModemTest do
       assert [sent: _, sent: _, sent: _, sent: _] = events
     end
 
+    test "waits for an OK for an initial cancel" do
+      query =
+        Query.new(
+          id: :erlang.unique_integer([:monotonic]),
+          type: :cancel,
+          vehicle_id: "1234",
+          intersection_alias: "int",
+          approach: :north,
+          event_time: System.system_time()
+        )
+
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm, []} = Modem.connect(comm)
+
+      {:ok, comm, events} = Modem.send(comm, query)
+
+      {:ok, comm, events} = process_data(comm, ["OK\nOK\n"], events)
+      assert comm.transport.sent == ["AT*RELAYOUT2=0\n"]
+      assert [sent: _] = events
+    end
+
+    test "reconnecting while waiting for a response returns failed" do
+      query =
+        Query.new(
+          id: :erlang.unique_integer([:monotonic]),
+          type: :request,
+          vehicle_id: "1234",
+          intersection_alias: "int",
+          approach: :north,
+          event_time: System.system_time()
+        )
+
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm, []} = Modem.connect(comm)
+
+      {:ok, comm, events} = Modem.send(comm, query)
+
+      {:ok, comm, events} = process_data(comm, ["OK\n"], events)
+      assert comm.transport.sent == ["AT*RELAYOUT2=1\n"]
+      {:ok, comm, connect_events} = Modem.connect(comm)
+      {:ok, _comm, events} = process_data(comm, ["OK\nOK\n"], events ++ connect_events)
+      assert [{:failed, ^query, :reconnect}] = events
+    end
+
     test "can handle an echo without an initial OK" do
       query =
         Query.new(

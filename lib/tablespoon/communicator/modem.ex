@@ -24,6 +24,7 @@ defmodule Tablespoon.Communicator.Modem do
   > "AT*RELAYOUT3=0" (skipped, not sent)
   > "AT*RELAYOUT3=0" -> "OK"
   """
+  require Logger
   @behaviour Tablespoon.Communicator
 
   @enforce_keys [:transport]
@@ -47,16 +48,20 @@ defmodule Tablespoon.Communicator.Modem do
   @impl Tablespoon.Communicator
   def connect(%__MODULE__{} = comm) do
     with {:ok, transport} <- Transport.connect(comm.transport) do
-      comm = %{comm | transport: transport}
-
-      comm =
-        if comm.expect_ok? do
-          comm
-        else
-          %{comm | connected?: true}
+      failures =
+        for q <- :queue.to_list(comm.queue) do
+          {:failed, q, :reconnect}
         end
 
-      {:ok, comm, []}
+      connected? = not comm.expect_ok?
+
+      comm = %__MODULE__{
+        transport: transport,
+        expect_ok?: comm.expect_ok?,
+        connected?: connected?
+      }
+
+      {:ok, comm, failures}
     end
   end
 
@@ -134,9 +139,16 @@ defmodule Tablespoon.Communicator.Modem do
   end
 
   defp handle_line(%{connected?: true} = comm, "OK") do
-    {{:value, q}, queue} = :queue.out(comm.queue)
-    comm = %{comm | queue: queue}
-    {:ok, comm, [sent: q]}
+    case :queue.out(comm.queue) do
+      {{:value, q}, queue} ->
+        comm = %{comm | queue: queue}
+        {:ok, comm, [sent: q]}
+
+      {:empty, queue} ->
+        comm = %{comm | queue: queue}
+        _ = Logger.info("#{__MODULE__} unexpected OK response, ignoring...")
+        {:ok, comm, []}
+    end
   end
 
   defp handle_line(comm, "AT*RELAYOUT" <> _) do
