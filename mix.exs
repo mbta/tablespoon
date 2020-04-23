@@ -47,7 +47,7 @@ defmodule Tablespoon.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.4.9"},
+      {:phoenix, "~> 1.5.1"},
       {:phoenix_html, "~> 2.14.0"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
