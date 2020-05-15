@@ -20,6 +20,7 @@ defmodule TablespoonTcp.Listener do
   def child_spec([]) do
     %{
       id: __MODULE__,
+      type: :supervisor,
       start: {__MODULE__, :start_link, []}
     }
   end
