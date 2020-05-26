@@ -13,7 +13,7 @@ defmodule Tablespoon.Transport.TCP do
   """
   @behaviour Tablespoon.Transport
 
-  @tcp_opts [:binary, {:active, true}, {:nodelay, true}]
+  @tcp_opts [:binary, {:active, true}, {:nodelay, true}, {:keepalive, true}]
   @connect_timeout 5_000
 
   @enforce_keys [:host, :port]

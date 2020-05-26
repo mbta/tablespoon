@@ -44,7 +44,8 @@ defmodule Tablespoon.Transport.SSH do
                user_interaction: false,
                save_accepted_host: false,
                quiet_mode: false,
-               connect_timeout: @connect_timeout
+               connect_timeout: @connect_timeout,
+               keepalive: true
              ],
              @negotiation_timeout
            ),
