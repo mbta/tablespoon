@@ -156,6 +156,17 @@ defmodule Tablespoon.IntersectionTest do
         assert {:noreply, _state} = Intersection.handle_continue(:connect, state)
       end)
     end
+
+    @tag :capture_log
+    test "if we're already connected, do not reconnect" do
+      {:ok, state, {:continue, :connect}} = Intersection.init(config: @config)
+      assert {:noreply, state, timeout} = Intersection.handle_continue(:connect, state)
+      assert is_integer(timeout)
+      old_config = state.config
+      assert {:noreply, state, timeout} = Intersection.handle_continue(:connect, state)
+      assert state.config == old_config
+      assert is_integer(timeout)
+    end
   end
 
   describe "handle_info(:timeout)" do

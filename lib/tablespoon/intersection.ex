@@ -136,7 +136,7 @@ defmodule Tablespoon.Intersection do
   end
 
   @impl GenServer
-  def handle_continue(:connect, %{config: config} = state) do
+  def handle_continue(:connect, %{config: config, connected?: false} = state) do
     state =
       case Communicator.connect(config.communicator) do
         {:ok, communicator, results} ->
@@ -167,6 +167,11 @@ defmodule Tablespoon.Intersection do
     state_no_reply(state)
   end
 
+  def handle_continue(:connect, %{config: config, connected?: true} = state) do
+    # already connected, not reconnecting
+    {:noreply, state, config.warning_timeout_ms}
+  end
+
   @impl GenServer
   def handle_info(:timeout, %{config: config} = state) do
     time = state.time_fn.()
@@ -184,6 +189,7 @@ defmodule Tablespoon.Intersection do
   end
 
   def handle_info(:reconnect, state) do
+    state = %{state | connected?: false}
     {:noreply, state, {:continue, :connect}}
   end
 
