@@ -20,11 +20,12 @@ defmodule Tablespoon.Transport.SSH do
   @behaviour Tablespoon.Transport
   @connect_timeout 5_000
   @negotiation_timeout @connect_timeout * 2
+  @keep_alive_timeout 240_000
 
   require Logger
 
   @derive {Inspect, except: [:password]}
-  defstruct [:host, :username, :password, :conn_ref, :channel_id, port: 22]
+  defstruct [:host, :username, :password, :conn_ref, :channel_id, :keep_alive_ref, port: 22]
 
   @impl Tablespoon.Transport
   def new(opts) do
@@ -52,7 +53,9 @@ defmodule Tablespoon.Transport.SSH do
          {:ok, channel_id} <- :ssh_connection.session_channel(conn_ref, @connect_timeout),
          :success <- :ssh_connection.ptty_alloc(conn_ref, channel_id, []),
          :ok <- :ssh_connection.shell(conn_ref, channel_id) do
-      {:ok, %{ssh | conn_ref: conn_ref, channel_id: channel_id}}
+      ssh = %{ssh | conn_ref: conn_ref, channel_id: channel_id}
+      ssh = schedule_keep_alive(ssh)
+      {:ok, ssh}
     else
       {:error, l} when is_list(l) ->
         # convert charlist errors into binary errors, since that's what we
@@ -73,6 +76,7 @@ defmodule Tablespoon.Transport.SSH do
         %__MODULE__{conn_ref: conn_ref, channel_id: channel_id} = ssh,
         {:ssh_cm, conn_ref, {:data, channel_id, 0, data}}
       ) do
+    ssh = schedule_keep_alive(ssh)
     {:ok, ssh, [{:data, data}]}
   end
 
@@ -96,9 +100,7 @@ defmodule Tablespoon.Transport.SSH do
         %__MODULE__{conn_ref: conn_ref, channel_id: channel_id} = ssh,
         {:ssh_cm, conn_ref, {:closed, channel_id}}
       ) do
-    _ = :ssh.close(conn_ref)
-    ssh = %{ssh | conn_ref: nil, channel_id: nil}
-    {:ok, ssh, [:closed]}
+    do_close(ssh)
   end
 
   def stream(%__MODULE__{conn_ref: conn_ref} = ssh, {:ssh_cm, conn_ref, message}) do
@@ -111,6 +113,33 @@ defmodule Tablespoon.Transport.SSH do
     {:ok, ssh, []}
   end
 
+  def stream(
+        %__MODULE__{conn_ref: conn_ref} = ssh,
+        {:ssh_keep_alive, conn_ref}
+      ) do
+    # NB: this request/reply happens syncronously!
+    case :ssh_connection_handler.global_request(
+           conn_ref,
+           'keep-alive@mbta.com',
+           true,
+           [],
+           @connect_timeout
+         ) do
+      {reply, _} when reply in [:success, :failure] ->
+        ssh = schedule_keep_alive(ssh)
+        {:ok, ssh, []}
+
+      {:error, e} ->
+        _ =
+          Logger.warn(fn ->
+            "unexpected reply from keep-alive ssh=#{inspect(ssh)} error=#{inspect(e)}"
+          end)
+
+        ssh = do_close(ssh)
+        {:ok, ssh, [{:error, e}]}
+    end
+  end
+
   def stream(%__MODULE__{}, _) do
     :unknown
   end
@@ -120,5 +149,26 @@ defmodule Tablespoon.Transport.SSH do
     with :ok <- :ssh_connection.send(ssh.conn_ref, ssh.channel_id, data) do
       {:ok, ssh}
     end
+  end
+
+  def do_close(ssh) do
+    _ = :ssh.close(ssh.conn_ref)
+    ssh = cancel_keep_alive(%{ssh | conn_ref: nil, channel_id: nil})
+    {:ok, ssh, [:closed]}
+  end
+
+  defp schedule_keep_alive(ssh) do
+    ssh = cancel_keep_alive(ssh)
+    ref = Process.send_after(self(), {:ssh_keep_alive, ssh.conn_ref}, @keep_alive_timeout)
+    %{ssh | keep_alive_ref: ref}
+  end
+
+  defp cancel_keep_alive(ssh) do
+    _ =
+      if is_reference(ssh.keep_alive_ref) do
+        Process.cancel_timer(ssh.keep_alive_ref)
+      end
+
+    %{ssh | keep_alive_ref: nil}
   end
 end
