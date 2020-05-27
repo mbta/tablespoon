@@ -165,9 +165,26 @@ defmodule Tablespoon.Communicator.Modem do
         {:unknown, line}
       end
 
-    {{:value, q}, queue} = :queue.out(comm.queue)
+    {response, queue} = :queue.out(comm.queue)
     comm = %{comm | queue: queue}
-    {:ok, comm, [{:failed, q, error}]}
+
+    results =
+      case response do
+        {:value, q} ->
+          [{:failed, q, error}]
+
+        :empty ->
+          _ =
+            Logger.warn(
+              "#{__MODULE__} unexpected response with empty queue comm=#{inspect(comm)} line=#{
+                inspect(line)
+              }"
+            )
+
+          []
+      end
+
+    {:ok, comm, results}
   end
 
   defp handle_line(%{connected?: false} = comm, "OK") do

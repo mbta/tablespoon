@@ -2,6 +2,7 @@ defmodule Tablespoon.Communicator.ModemTest do
   @moduledoc false
   use ExUnit.Case, async: true
   use ExUnitProperties
+  import ExUnit.CaptureLog, only: [capture_log: 1]
 
   alias Tablespoon.Communicator.Modem
   alias Tablespoon.Query
@@ -62,6 +63,19 @@ defmodule Tablespoon.Communicator.ModemTest do
       {:ok, comm, events} = Modem.send(comm, query)
       {:ok, _comm, events} = process_data(comm, ["OK\n", "ERROR\n"], events)
       assert events == [{:failed, query, :error}]
+    end
+
+    test "handles errors without a request" do
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm, []} = Modem.connect(comm)
+
+      log =
+        capture_log(fn ->
+          {:ok, _comm, events} = process_data(comm, ["OK\n", "ERROR\n"], [])
+          assert events == []
+        end)
+
+      assert log =~ "unexpected response with empty queue"
     end
 
     test "acks queries in FIFO order" do
