@@ -34,6 +34,10 @@ defmodule Tablespoon.Transport.TCP do
              @tcp_opts,
              @connect_timeout
            ) do
+      if tcp.socket do
+        _ = :gen_tcp.close(tcp.socket)
+      end
+
       tcp = %{tcp | socket: socket}
       {:ok, tcp}
     end
@@ -52,6 +56,7 @@ defmodule Tablespoon.Transport.TCP do
   end
 
   def stream(%__MODULE__{socket: socket} = tcp, {:tcp_closed, socket}) do
+    :ok = :gen_tcp.close(socket)
     tcp = %{tcp | socket: nil}
     {:ok, tcp, [:closed]}
   end
