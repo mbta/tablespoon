@@ -11,6 +11,7 @@ defmodule Tablespoon.Transport.TCP do
       {:ok, tcp, results} = TCP.stream(tcp, x)
   end
   """
+  require Logger
   @behaviour Tablespoon.Transport
 
   @tcp_opts [:binary, {:active, true}, {:nodelay, true}, {:keepalive, true}]
@@ -27,6 +28,10 @@ defmodule Tablespoon.Transport.TCP do
 
   @impl Tablespoon.Transport
   def connect(%__MODULE__{} = tcp) do
+    if tcp.socket do
+      _ = :gen_tcp.close(tcp.socket)
+    end
+
     with {:ok, socket} <-
            :gen_tcp.connect(
              tcp.host,
@@ -34,10 +39,6 @@ defmodule Tablespoon.Transport.TCP do
              @tcp_opts,
              @connect_timeout
            ) do
-      if tcp.socket do
-        _ = :gen_tcp.close(tcp.socket)
-      end
-
       tcp = %{tcp | socket: socket}
       {:ok, tcp}
     end
@@ -53,6 +54,12 @@ defmodule Tablespoon.Transport.TCP do
   @impl Tablespoon.Transport
   def stream(%__MODULE__{socket: socket} = tcp, {:tcp, socket, packet}) do
     {:ok, tcp, [data: packet]}
+  end
+
+  def stream(%__MODULE__{socket: socket} = tcp, {:tcp_error, socket, error}) do
+    _ = Logger.warn("unexpected TCP error socket=#{inspect(socket)} error=#{inspect(error)}")
+    # treat it as a closed connection
+    stream(tcp, {:tcp_closed, socket})
   end
 
   def stream(%__MODULE__{socket: socket} = tcp, {:tcp_closed, socket}) do
