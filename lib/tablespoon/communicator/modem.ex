@@ -34,8 +34,12 @@ defmodule Tablespoon.Communicator.Modem do
                 queue: :queue.new(),
                 approach_counts: %{:north => 0, :east => 0, :south => 0, :west => 0},
                 expect_ok?: true,
-                connected?: false
+                connected?: false,
+                id_ref: nil,
+                keep_alive_ref: nil
               ]
+
+  @keep_alive_timeout 180_000
 
   alias Tablespoon.{Protocol.Line, Query, Transport}
 
@@ -54,8 +58,11 @@ defmodule Tablespoon.Communicator.Modem do
         end
 
       connected? = not comm.expect_ok?
+      id_ref = make_ref()
+      if connected?, do: Kernel.send(self(), {id_ref, :timeout})
 
       comm = %__MODULE__{
+        id_ref: id_ref,
         transport: transport,
         expect_ok?: comm.expect_ok?,
         connected?: connected?
@@ -100,6 +107,21 @@ defmodule Tablespoon.Communicator.Modem do
   end
 
   @impl Tablespoon.Communicator
+  def stream(comm, message)
+
+  def stream(%__MODULE__{id_ref: id_ref} = comm, {id_ref, :timeout}) do
+    _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
+
+    case Transport.send(comm.transport, "\n") do
+      {:ok, transport} ->
+        ref = Process.send_after(self(), {id_ref, :timeout}, @keep_alive_timeout)
+        {:ok, %{comm | keep_alive_ref: ref, transport: transport}, []}
+
+      {:error, e} ->
+        {:ok, %{comm | keep_alive_ref: nil}, [{:error, e}]}
+    end
+  end
+
   def stream(%__MODULE__{} = comm, message) do
     with {:ok, transport, results} <- Transport.stream(comm.transport, message) do
       comm = %{comm | transport: transport}
@@ -118,6 +140,7 @@ defmodule Tablespoon.Communicator.Modem do
         {:failed, q, :closed}
       end
 
+    _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
     comm = %__MODULE__{transport: comm.transport, expect_ok?: comm.expect_ok?}
     {:halt, {:ok, comm, events ++ failures ++ [{:error, :closed}]}}
   end
@@ -190,6 +213,7 @@ defmodule Tablespoon.Communicator.Modem do
   defp handle_line(%{connected?: false} = comm, "OK") do
     # we get an OK when we first connect
     comm = %{comm | connected?: true}
+    Kernel.send(self(), {comm.id_ref, :timeout})
     {:ok, comm, []}
   end
 
