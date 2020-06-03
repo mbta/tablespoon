@@ -105,6 +105,10 @@ defmodule Tablespoon.Transport.FakeModem do
     handle_buffer(t)
   end
 
+  defp handle_line(t, "") do
+    handle_buffer(t)
+  end
+
   def trigger?(rate) do
     Enum.random(1..100) <= rate
   end
