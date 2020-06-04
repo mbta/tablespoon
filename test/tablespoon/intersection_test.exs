@@ -134,7 +134,9 @@ defmodule Tablespoon.IntersectionTest do
 
       log =
         capture_log(fn ->
-          {:noreply, ^state} = Intersection.handle_cast({:query, query}, state)
+          {:noreply, state} = Intersection.handle_cast({:query, query}, state)
+          refute state.connected?
+          assert state.reconnect_ref
         end)
 
       assert log =~ "error=:not_connected"
