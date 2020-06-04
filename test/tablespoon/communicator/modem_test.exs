@@ -203,6 +203,33 @@ defmodule Tablespoon.Communicator.ModemTest do
       {:ok, _comm, events} = process_data(comm, ["OK\r\n"], events)
       assert events == [{:sent, query}]
     end
+
+    test "timeout sends an empty new line" do
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm, []} = Modem.connect(comm)
+      {:ok, comm, []} = process_data(comm, [{comm.id_ref, :timeout}], [])
+      assert comm.transport.sent == ["\n"]
+    end
+
+    test "timeout with stale messages replies with an error" do
+      query =
+        Query.new(
+          id: 1,
+          type: :cancel,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time(),
+          received_at_mono: System.monotonic_time() - 100_000_000_000
+        )
+
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm, []} = Modem.connect(comm)
+      {:ok, comm, events} = Modem.send(comm, query)
+      {:ok, comm, events} = process_data(comm, [{comm.id_ref, :timeout}], events)
+      assert events == [{:failed, query, :stale}, {:error, :stale}]
+      assert comm.transport.sent == ["AT*RELAYOUT4=0\n"]
+    end
   end
 
   defp process_data(comm, datas, events) do

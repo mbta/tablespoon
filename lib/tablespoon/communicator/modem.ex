@@ -39,7 +39,10 @@ defmodule Tablespoon.Communicator.Modem do
                 keep_alive_ref: nil
               ]
 
+  # how often we send a newline to keep the connection open
   @keep_alive_timeout 180_000
+  # how long an in-flight request can not have a response before we consider it stale and re-connect
+  @stale_query_timeout 30_000
 
   alias Tablespoon.{Protocol.Line, Query, Transport}
 
@@ -74,35 +77,37 @@ defmodule Tablespoon.Communicator.Modem do
 
   @impl Tablespoon.Communicator
   def send(%__MODULE__{} = comm, %Query{} = q) do
-    count_change =
-      if q.type == :request do
-        &(&1 + 1)
+    with {:ok, comm} <- check_stale_queries(comm) do
+      count_change =
+        if q.type == :request do
+          &(&1 + 1)
+        else
+          # ensure we never go below 0
+          &max(&1 - 1, 0)
+        end
+
+      approach_counts = Map.update!(comm.approach_counts, q.approach, count_change)
+
+      if q.type == :request or Map.fetch!(approach_counts, q.approach) == 0 do
+        data =
+          q
+          |> query_iodata()
+          |> Line.encode()
+
+        case Transport.send(comm.transport, data) do
+          {:ok, transport} ->
+            queue = :queue.in(q, comm.queue)
+
+            {:ok, %{comm | transport: transport, queue: queue, approach_counts: approach_counts},
+             []}
+
+          {:error, e} ->
+            {:ok, comm, [{:failed, q, e}]}
+        end
       else
-        # ensure we never go below 0
-        &max(&1 - 1, 0)
+        # ignoring an extra cancel
+        {:ok, %{comm | approach_counts: approach_counts}, [sent: q]}
       end
-
-    approach_counts = Map.update!(comm.approach_counts, q.approach, count_change)
-
-    if q.type == :request or Map.fetch!(approach_counts, q.approach) == 0 do
-      data =
-        q
-        |> query_iodata()
-        |> Line.encode()
-
-      case Transport.send(comm.transport, data) do
-        {:ok, transport} ->
-          queue = :queue.in(q, comm.queue)
-
-          {:ok, %{comm | transport: transport, queue: queue, approach_counts: approach_counts},
-           []}
-
-        {:error, e} ->
-          {:ok, comm, [{:failed, q, e}]}
-      end
-    else
-      # ignoring an extra cancel
-      {:ok, %{comm | approach_counts: approach_counts}, [sent: q]}
     end
   end
 
@@ -110,20 +115,23 @@ defmodule Tablespoon.Communicator.Modem do
   def stream(comm, message)
 
   def stream(%__MODULE__{id_ref: id_ref} = comm, {id_ref, :timeout}) do
-    _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
+    with {:ok, comm} <- check_stale_queries(comm) do
+      _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
 
-    case Transport.send(comm.transport, "\n") do
-      {:ok, transport} ->
-        ref = Process.send_after(self(), {id_ref, :timeout}, @keep_alive_timeout)
-        {:ok, %{comm | keep_alive_ref: ref, transport: transport}, []}
+      case Transport.send(comm.transport, "\n") do
+        {:ok, transport} ->
+          ref = Process.send_after(self(), {id_ref, :timeout}, @keep_alive_timeout)
+          {:ok, %{comm | keep_alive_ref: ref, transport: transport}, []}
 
-      {:error, e} ->
-        {:ok, %{comm | keep_alive_ref: nil}, [{:error, e}]}
+        {:error, e} ->
+          {:ok, comm, [{:error, e}]}
+      end
     end
   end
 
   def stream(%__MODULE__{} = comm, message) do
-    with {:ok, transport, results} <- Transport.stream(comm.transport, message) do
+    with {:ok, transport, results} <- Transport.stream(comm.transport, message),
+         {:ok, comm} <- check_stale_queries(comm) do
       comm = %{comm | transport: transport}
       Enum.reduce_while(results, {:ok, comm, []}, &handle_stream_results/2)
     end
@@ -135,14 +143,7 @@ defmodule Tablespoon.Communicator.Modem do
   end
 
   defp handle_stream_results(:closed, {:ok, comm, events}) do
-    failures =
-      for q <- :queue.to_list(comm.queue) do
-        {:failed, q, :closed}
-      end
-
-    _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
-    comm = %__MODULE__{transport: comm.transport, expect_ok?: comm.expect_ok?}
-    {:halt, {:ok, comm, events ++ failures ++ [{:error, :closed}]}}
+    {:halt, do_close(comm, :closed, events)}
   end
 
   defp handle_buffer(comm, events) do
@@ -228,4 +229,29 @@ defmodule Tablespoon.Communicator.Modem do
 
   defp request_value(%{type: :request}), do: ?1
   defp request_value(%{type: :cancel}), do: ?0
+
+  defp check_stale_queries(comm) do
+    stale_responses =
+      :queue.filter(
+        fn q -> Query.processing_time(q, :millisecond) > @stale_query_timeout end,
+        comm.queue
+      )
+
+    if :queue.is_empty(stale_responses) do
+      {:ok, comm}
+    else
+      do_close(comm, :stale, [])
+    end
+  end
+
+  defp do_close(comm, reason, events) do
+    failures =
+      for q <- :queue.to_list(comm.queue) do
+        {:failed, q, reason}
+      end
+
+    _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
+    comm = %__MODULE__{transport: comm.transport, expect_ok?: comm.expect_ok?}
+    {:ok, comm, events ++ failures ++ [{:error, reason}]}
+  end
 end
