@@ -155,7 +155,7 @@ defmodule Tablespoon.Intersection do
 
           state
 
-        {:error, _} = e ->
+        {:error, e} ->
           state = %{state | connect_failure_count: state.connect_failure_count + 1}
 
           _ =
