@@ -210,6 +210,23 @@ defmodule Tablespoon.IntersectionTest do
     end
   end
 
+  describe "handle_info(:reconnect)" do
+    @tag :capture_log
+    test "does not change the current connection status" do
+      {:ok, state, _} = Intersection.init(config: @config)
+      refute state.connected?
+
+      {:noreply, state, {:continue, :connect}} = Intersection.handle_info(:reconnect, state)
+      refute state.connected?
+
+      {:noreply, state, _} = Intersection.handle_continue(:connect, state)
+      assert state.connected?
+
+      {:noreply, state, {:continue, :connect}} = Intersection.handle_info(:reconnect, state)
+      assert state.connected?
+    end
+  end
+
   describe "handle_results/2" do
     setup :log_level_info
 

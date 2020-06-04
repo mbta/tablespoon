@@ -189,7 +189,6 @@ defmodule Tablespoon.Intersection do
   end
 
   def handle_info(:reconnect, state) do
-    state = %{state | connected?: false}
     {:noreply, state, {:continue, :connect}}
   end
 
