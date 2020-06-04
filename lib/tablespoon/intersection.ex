@@ -72,6 +72,7 @@ defmodule Tablespoon.Intersection do
   defstruct [
     :config,
     :fuse_name,
+    :reconnect_ref,
     connected?: false,
     connect_failure_count: 0,
     time_fn: &:erlang.time/0
@@ -141,7 +142,10 @@ defmodule Tablespoon.Intersection do
       case Communicator.connect(config.communicator) do
         {:ok, communicator, results} ->
           config = %{config | communicator: communicator}
-          state = %{state | config: config, connected?: true}
+
+          _ = if state.reconnect_ref, do: Process.cancel_timer(state.reconnect_ref)
+
+          state = %{state | config: config, connected?: true, reconnect_ref: nil}
           state = Enum.reduce(results, state, &handle_results/2)
 
           _ =
@@ -189,6 +193,7 @@ defmodule Tablespoon.Intersection do
   end
 
   def handle_info(:reconnect, state) do
+    state = %{state | reconnect_ref: nil}
     {:noreply, state, {:continue, :connect}}
   end
 
@@ -275,8 +280,12 @@ defmodule Tablespoon.Intersection do
   end
 
   def reconnect_after(state) do
-    Process.send_after(self(), :reconnect, retry_after(state.connect_failure_count))
-    state
+    if state.reconnect_ref do
+      state
+    else
+      ref = Process.send_after(self(), :reconnect, retry_after(state.connect_failure_count))
+      %{state | reconnect_ref: ref}
+    end
   end
 
   defp retry_after(connect_failure_count) do
