@@ -247,9 +247,8 @@ defmodule Tablespoon.Communicator.ModemTest do
   describe "stream/2" do
     property "always returns sent or failed for a query" do
       check all(query_responses <- list_of(query_response(), min_length: 1)) do
-        comm = Modem.new(FakeTransport.new())
+        comm = Modem.new(FakeTransport.new(), expect_ok?: false)
         {:ok, comm, []} = Modem.connect(comm)
-        {:ok, comm, []} = Modem.stream(comm, "OK\n")
 
         {:ok, _comm, events} =
           Enum.reduce(query_responses, {:ok, comm, []}, fn {query, response},
@@ -266,7 +265,13 @@ defmodule Tablespoon.Communicator.ModemTest do
                 {:ok, comm, new_events}
               end
 
-            {:ok, comm, events ++ new_events}
+            if :close in response do
+              # reconnect if we got disconnected
+              {:ok, comm, connect_events} = Modem.connect(comm)
+              {:ok, comm, events ++ new_events ++ connect_events}
+            else
+              {:ok, comm, events ++ new_events}
+            end
           end)
 
         events = Enum.filter(events, &(elem(&1, 0) in [:sent, :failed]))
@@ -307,7 +312,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       constant(["OK\n"]),
       constant(["ERROR\n"]),
       constant(["unknown\n"]),
-      constant([:close, "OK\n"])
+      constant([:close])
     ])
   end
 end
