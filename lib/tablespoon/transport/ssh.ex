@@ -90,6 +90,14 @@ defmodule Tablespoon.Transport.SSH do
 
   def stream(
         %__MODULE__{conn_ref: conn_ref, channel_id: channel_id} = ssh,
+        {:ssh_cm, conn_ref, {:exit_signal, channel_id, _signal, _error, _lang}}
+      ) do
+    # exit signal message: we don't do anything with this
+    {:ok, ssh, []}
+  end
+
+  def stream(
+        %__MODULE__{conn_ref: conn_ref, channel_id: channel_id} = ssh,
         {:ssh_cm, conn_ref, {:eof, channel_id}}
       ) do
     # the other side closed their write connection: nothing to do
