@@ -224,6 +224,23 @@ defmodule Tablespoon.Communicator.Modem do
     {:ok, comm, []}
   end
 
+  defp handle_line(%{connection_state: :awaiting_ok} = comm, "picocom" <> _) do
+    # picocom modems send a bunch of user-facing content when
+    # connecting. it's over when we get a "Terminal ready" line.
+    comm = %{comm | connection_state: :picocom_initial}
+    {:ok, comm, []}
+  end
+
+  defp handle_line(%{connection_state: :picocom_initial} = comm, "Terminal ready") do
+    Kernel.send(self(), {comm.id_ref, :timeout})
+    comm = %{comm | connection_state: :connected}
+    {:ok, comm, []}
+  end
+
+  defp handle_line(%{connection_state: :picocom_initial} = comm, _) do
+    {:ok, comm, []}
+  end
+
   defp query_iodata(%Query{} = q) do
     ["AT*RELAYOUT", request_relay(q), ?=, request_value(q)]
   end

@@ -47,6 +47,16 @@ defmodule Tablespoon.Communicator.ModemTest do
       assert comm.transport.sent == ["AT*RELAYOUT4=1\n"]
     end
 
+    test "if connected to a picocom modem, does not connect until the debugging output is finished" do
+      comm = Modem.new(FakeTransport.new())
+      {:ok, comm, []} = Modem.connect(comm)
+      refute comm.connection_state == :connected
+      {:ok, comm, []} = process_data(comm, ["picocom v3.1\n\nOK\n"], [])
+      refute comm.connection_state == :connected
+      {:ok, comm, []} = process_data(comm, ["Terminal ready\n"], [])
+      assert comm.connection_state == :connected
+    end
+
     test "handles errors in the response" do
       query =
         Query.new(
