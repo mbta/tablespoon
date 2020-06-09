@@ -117,27 +117,18 @@ defmodule Tablespoon.Transport.SSH do
         %__MODULE__{conn_ref: conn_ref} = ssh,
         {:ssh_keep_alive, conn_ref}
       ) do
-    # NB: this request/reply happens syncronously!
-    case :ssh_connection_handler.global_request(
-           conn_ref,
-           'keep-alive@mbta.com',
-           true,
-           [],
-           @connect_timeout
-         ) do
-      {reply, _} when reply in [:success, :failure] ->
-        ssh = schedule_keep_alive(ssh)
-        {:ok, ssh, []}
+    # this is an async request
+    :ok =
+      :ssh_connection_handler.global_request(
+        conn_ref,
+        'keep-alive@mbta.com',
+        false,
+        [],
+        @connect_timeout
+      )
 
-      {:error, e} ->
-        _ =
-          Logger.warn(fn ->
-            "unexpected reply from keep-alive ssh=#{inspect(ssh)} error=#{inspect(e)}"
-          end)
-
-        ssh = do_close(ssh)
-        {:ok, ssh, [{:error, e}]}
-    end
+    ssh = schedule_keep_alive(ssh)
+    {:ok, ssh, []}
   end
 
   def stream(%__MODULE__{}, _) do
