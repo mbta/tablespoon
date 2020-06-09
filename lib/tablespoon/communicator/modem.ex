@@ -34,7 +34,7 @@ defmodule Tablespoon.Communicator.Modem do
                 queue: :queue.new(),
                 approach_counts: %{:north => 0, :east => 0, :south => 0, :west => 0},
                 expect_ok?: true,
-                connected?: false,
+                connection_state: :not_connected,
                 id_ref: nil,
                 keep_alive_ref: nil
               ]
@@ -60,15 +60,21 @@ defmodule Tablespoon.Communicator.Modem do
           {:failed, q, :reconnect}
         end
 
-      connected? = not comm.expect_ok?
       id_ref = make_ref()
-      if connected?, do: Kernel.send(self(), {id_ref, :timeout})
+
+      connection_state =
+        if comm.expect_ok? do
+          :awaiting_ok
+        else
+          Kernel.send(self(), {id_ref, :timeout})
+          :connected
+        end
 
       comm = %__MODULE__{
         id_ref: id_ref,
         transport: transport,
         expect_ok?: comm.expect_ok?,
-        connected?: connected?
+        connection_state: connection_state
       }
 
       {:ok, comm, failures}
@@ -162,7 +168,7 @@ defmodule Tablespoon.Communicator.Modem do
     {:ok, comm, []}
   end
 
-  defp handle_line(%{connected?: true} = comm, "OK") do
+  defp handle_line(%{connection_state: :connected} = comm, "OK") do
     case :queue.out(comm.queue) do
       {{:value, q}, queue} ->
         comm = %{comm | queue: queue}
@@ -181,7 +187,7 @@ defmodule Tablespoon.Communicator.Modem do
     {:ok, comm, []}
   end
 
-  defp handle_line(%{connected?: true} = comm, line) do
+  defp handle_line(%{connection_state: :connected} = comm, line) do
     error =
       if line == "ERROR" do
         :error
@@ -211,9 +217,9 @@ defmodule Tablespoon.Communicator.Modem do
     {:ok, comm, results}
   end
 
-  defp handle_line(%{connected?: false} = comm, "OK") do
+  defp handle_line(%{connection_state: :awaiting_ok} = comm, "OK") do
     # we get an OK when we first connect
-    comm = %{comm | connected?: true}
+    comm = %{comm | connection_state: :connected}
     Kernel.send(self(), {comm.id_ref, :timeout})
     {:ok, comm, []}
   end
