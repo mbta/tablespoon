@@ -25,7 +25,16 @@ defmodule Tablespoon.Transport.SSH do
   require Logger
 
   @derive {Inspect, except: [:password]}
-  defstruct [:host, :username, :password, :conn_ref, :channel_id, :keep_alive_ref, port: 22]
+  defstruct [
+    :host,
+    :username,
+    :password,
+    :conn_ref,
+    :channel_id,
+    :keep_alive_ref,
+    :old_conn_ref,
+    port: 22
+  ]
 
   @impl Tablespoon.Transport
   def new(opts) do
@@ -53,7 +62,7 @@ defmodule Tablespoon.Transport.SSH do
          {:ok, channel_id} <- :ssh_connection.session_channel(conn_ref, @connect_timeout),
          :success <- :ssh_connection.ptty_alloc(conn_ref, channel_id, []),
          :ok <- :ssh_connection.shell(conn_ref, channel_id) do
-      ssh = %{ssh | conn_ref: conn_ref, channel_id: channel_id}
+      ssh = %{ssh | conn_ref: conn_ref, channel_id: channel_id, old_conn_ref: ssh.conn_ref}
       ssh = schedule_keep_alive(ssh)
       {:ok, ssh}
     else
@@ -139,6 +148,16 @@ defmodule Tablespoon.Transport.SSH do
     {:ok, ssh, []}
   end
 
+  def stream(%__MODULE__{old_conn_ref: old_conn_ref} = ssh, {:ssh_cm, old_conn_ref, _}) do
+    # message meant for the old connection; ignore
+    {:ok, ssh, []}
+  end
+
+  def stream(%__MODULE__{old_conn_ref: old_conn_ref} = ssh, {:ssh_keep_alive, old_conn_ref}) do
+    # message meant for the old connection; ignore
+    {:ok, ssh, []}
+  end
+
   def stream(%__MODULE__{}, _) do
     :unknown
   end
@@ -152,7 +171,7 @@ defmodule Tablespoon.Transport.SSH do
 
   def do_close(ssh) do
     _ = :ssh.close(ssh.conn_ref)
-    ssh = cancel_keep_alive(%{ssh | conn_ref: nil, channel_id: nil})
+    ssh = cancel_keep_alive(%{ssh | channel_id: nil})
     {:ok, ssh, [:closed]}
   end
 

@@ -35,6 +35,16 @@ defmodule Tablespoon.Transport.SSHTest do
     test "ignores messages meant for other people" do
       assert SSH.stream(new_test(), :other_message) == :unknown
     end
+
+    @tag :rebex
+    test "re-connecting ignores messages from the old connection" do
+      {:ok, ssh} = SSH.connect(new_test())
+      {:ok, ssh} = SSH.connect(ssh)
+      {:ok, ssh} = SSH.send(ssh, "exit\r\n")
+      {:ok, messages} = test_stream(ssh)
+      unknown_messages = for {:unknown, _} = message <- messages, do: message
+      assert unknown_messages == []
+    end
   end
 
   defp new_test do
@@ -44,7 +54,15 @@ defmodule Tablespoon.Transport.SSHTest do
   defp test_stream(ssh, messages \\ []) do
     receive do
       x ->
-        {:ok, ssh, new_messages} = SSH.stream(ssh, x)
+        {:ok, ssh, new_messages} =
+          case SSH.stream(ssh, x) do
+            :unknown ->
+              [{:unknown, x}]
+
+            other ->
+              other
+          end
+
         messages = messages ++ new_messages
 
         if :closed in new_messages do
