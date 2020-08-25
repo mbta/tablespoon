@@ -34,5 +34,12 @@ defmodule Tablespoon.Intersection.ConfigTest do
       actual = from_json(@sample_json)
       assert expected == actual
     end
+
+    test "does not require a monitoring interval" do
+      json = %{@sample_json | "monitoringInterval" => "infinity"}
+      actual = from_json(json)
+
+      assert %{warning_timeout_ms: :infinity} = actual
+    end
   end
 end

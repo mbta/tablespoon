@@ -36,7 +36,12 @@ defmodule Tablespoon.Intersection.Config do
       "endTime" => warning_not_after_binary
     } = map
 
-    warning_timeout_ms = warning_timeout_minute * 60_000
+    warning_timeout_ms =
+      case warning_timeout_minute do
+        minutes when is_integer(minutes) -> minutes * 60_000
+        "infinity" -> :infinity
+      end
+
     warning_not_before = time(warning_not_before_binary)
 
     warning_not_after =
