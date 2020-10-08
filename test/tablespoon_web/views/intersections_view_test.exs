@@ -12,6 +12,10 @@ defmodule TablespoonWeb.IntersectionsViewTest do
         assert ms_to_minute(ms) == minutes
       end
     end
+
+    test "converts :infinity to nil" do
+      assert ms_to_minute(:infinity) == nil
+    end
   end
 
   describe "friendly_time/1" do
