@@ -33,8 +33,7 @@ defmodule Tablespoon.Query do
   @doc "Create a new Query"
   @spec new(Keyword.t()) :: t
   def new(opts) do
-    opts = Map.new(opts)
-    opts = Map.put_new_lazy(opts, :received_at_mono, &System.monotonic_time/0)
+    opts = opts_as_map(opts)
     struct!(__MODULE__, opts)
   end
 
@@ -43,5 +42,17 @@ defmodule Tablespoon.Query do
   def processing_time(%__MODULE__{} = q, time_unit) do
     diff = System.monotonic_time() - q.received_at_mono
     System.convert_time_unit(diff, :native, time_unit)
+  end
+
+  @doc "Create a new Query based on an existing query, with some updates"
+  @spec update(t, Keyword.t()) :: t
+  def update(%__MODULE__{} = query, opts) do
+    opts = opts_as_map(opts)
+    struct!(query, opts)
+  end
+
+  defp opts_as_map(opts) do
+    opts = Map.new(opts)
+    Map.put_new_lazy(opts, :received_at_mono, &System.monotonic_time/0)
   end
 end

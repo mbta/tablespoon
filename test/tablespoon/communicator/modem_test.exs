@@ -240,6 +240,68 @@ defmodule Tablespoon.Communicator.ModemTest do
       assert events == [{:failed, query, :stale}, {:error, :stale}]
       assert comm.transport.sent == ["AT*RELAYOUT4=0\n"]
     end
+
+    @tag :capture_log
+    test "vehicle timeout sends a cancel message" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      comm = Modem.new(FakeTransport.new(), expect_ok?: false)
+      {:ok, comm, []} = Modem.connect(comm)
+      {:ok, comm, events} = Modem.send(comm, query)
+
+      {:ok, comm, events} =
+        process_data(comm, ["OK\r\n", {comm.id_ref, :query_timeout, query}, "OK\r\n"], events)
+
+      assert events == [{:sent, query}]
+      assert comm.transport.sent == ["AT*RELAYOUT4=1\n", "AT*RELAYOUT4=0\n"]
+      assert comm.approach_counts.south == 0
+      assert comm.open_vehicles == %{}
+    end
+
+    test "vehicle timeout after a cancel request does not send an extra cancel message" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      cancel_query = Query.update(query, type: :cancel)
+
+      next_query = Query.update(query, vehicle_id: "2")
+
+      comm = Modem.new(FakeTransport.new(), expect_ok?: false)
+      {:ok, comm, []} = Modem.connect(comm)
+      {:ok, comm, events} = Modem.send(comm, query)
+      {:ok, comm, events2} = Modem.send(comm, cancel_query)
+      {:ok, comm, events3} = Modem.send(comm, next_query)
+
+      {:ok, comm, events} =
+        process_data(
+          comm,
+          ["OK\r\n", "OK\r\n", {comm.id_ref, :query_timeout, query}, "OK\r\n"],
+          events ++ events2 ++ events3
+        )
+
+      # we expect to have sent requests for all three queries, as well as
+      # having sent the relayout messages
+      assert events == [{:sent, query}, {:sent, cancel_query}, {:sent, next_query}]
+      assert comm.transport.sent == ["AT*RELAYOUT4=1\n", "AT*RELAYOUT4=0\n", "AT*RELAYOUT4=1\n"]
+      assert comm.approach_counts.south == 1
+      assert "1" not in Map.keys(comm.open_vehicles)
+      assert :queue.len(comm.open_vehicles["2"]) == 1
+    end
   end
 
   defp process_data(comm, datas, events) do

@@ -23,6 +23,10 @@ defmodule Tablespoon.Communicator.Modem do
   > "AT*RELAYOUT3=1" -> "OK"
   > "AT*RELAYOUT3=0" (skipped, not sent)
   > "AT*RELAYOUT3=0" -> "OK"
+
+  However, if we don't receive a cancel from the vehicle after some time
+  (`@open_request_timeout`) we will send a cancellation in the background and
+  log a warning.
   """
   require Logger
   @behaviour Tablespoon.Communicator
@@ -32,6 +36,7 @@ defmodule Tablespoon.Communicator.Modem do
               [
                 buffer: "",
                 queue: :queue.new(),
+                open_vehicles: %{},
                 approach_counts: %{:north => 0, :east => 0, :south => 0, :west => 0},
                 expect_ok?: true,
                 connection_state: :not_connected,
@@ -43,6 +48,8 @@ defmodule Tablespoon.Communicator.Modem do
   @keep_alive_timeout 180_000
   # how long an in-flight request can not have a response before we consider it stale and re-connect
   @stale_query_timeout 30_000
+  # how long a request can live without a cancel before we send a cancel ourselves
+  @open_request_timeout 300_000
 
   alias Tablespoon.{Protocol.Line, Query, Transport}
 
@@ -84,28 +91,15 @@ defmodule Tablespoon.Communicator.Modem do
   @impl Tablespoon.Communicator
   def send(%__MODULE__{} = comm, %Query{} = q) do
     with {:ok, comm} <- check_stale_queries(comm) do
-      count_change =
-        if q.type == :request do
-          &(&1 + 1)
-        else
-          # ensure we never go below 0
-          &max(&1 - 1, 0)
-        end
-
-      approach_counts = Map.update!(comm.approach_counts, q.approach, count_change)
+      comm = track_open_vehicles(comm, q)
+      approach_counts = update_approach_counts(comm, q)
 
       if q.type == :request or Map.fetch!(approach_counts, q.approach) == 0 do
-        data =
-          q
-          |> query_iodata()
-          |> Line.encode()
-
-        case Transport.send(comm.transport, data) do
+        case send_query(comm, q) do
           {:ok, transport} ->
             queue = :queue.in(q, comm.queue)
-
-            {:ok, %{comm | transport: transport, queue: queue, approach_counts: approach_counts},
-             []}
+            comm = %{comm | transport: transport, queue: queue, approach_counts: approach_counts}
+            {:ok, comm, []}
 
           {:error, e} ->
             {:ok, comm, [{:failed, q, e}]}
@@ -115,6 +109,73 @@ defmodule Tablespoon.Communicator.Modem do
         {:ok, %{comm | approach_counts: approach_counts}, [sent: q]}
       end
     end
+  end
+
+  defp track_open_vehicles(comm, q) do
+    open_vehicles =
+      case q.type do
+        :request ->
+          ref =
+            Process.send_after(self(), {comm.id_ref, :query_timeout, q}, @open_request_timeout)
+
+          track_open_vehicles_request(comm, q.vehicle_id, ref)
+
+        :cancel ->
+          track_open_vehicles_cancel(comm, q.vehicle_id)
+      end
+
+    %{comm | open_vehicles: open_vehicles}
+  end
+
+  defp track_open_vehicles_request(comm, vehicle_id, ref) do
+    open_vehicles = Map.put_new_lazy(comm.open_vehicles, vehicle_id, &:queue.new/0)
+    Map.update!(open_vehicles, vehicle_id, &:queue.in(ref, &1))
+  end
+
+  defp track_open_vehicles_cancel(comm, vehicle_id) do
+    with {:ok, queue} <- Map.fetch(comm.open_vehicles, vehicle_id),
+         {{:value, ref}, queue} <- :queue.out(queue) do
+      _ = Process.cancel_timer(ref)
+
+      if :queue.is_empty(queue) do
+        Map.delete(comm.open_vehicles, vehicle_id)
+      else
+        Map.put(comm.open_vehicles, vehicle_id, queue)
+      end
+    else
+      :error ->
+        # couldn't find the vehicle in the map
+        comm.open_vehicles
+
+      {:empty, _queue} ->
+        # I don't believe this case can happen, as we delete the entry if the
+        # queue is empty above. But we handle this case anyways, in the same
+        # way. -ps
+        # coveralls-ignore-start
+        Map.delete(comm.open_vehicles, vehicle_id)
+        # coveralls-ignore-stop
+    end
+  end
+
+  defp update_approach_counts(comm, q) do
+    count_change =
+      if q.type == :request do
+        &(&1 + 1)
+      else
+        # ensure we never go below 0
+        &max(&1 - 1, 0)
+      end
+
+    Map.update!(comm.approach_counts, q.approach, count_change)
+  end
+
+  def send_query(comm, q) do
+    data =
+      q
+      |> query_iodata()
+      |> Line.encode()
+
+    Transport.send(comm.transport, data)
   end
 
   @impl Tablespoon.Communicator
@@ -135,11 +196,72 @@ defmodule Tablespoon.Communicator.Modem do
     end
   end
 
+  def stream(%__MODULE__{id_ref: id_ref} = comm, {id_ref, :query_timeout, query}) do
+    vehicle_id = query.vehicle_id
+
+    case Map.fetch(comm.open_vehicles, vehicle_id) do
+      {:ok, queue} ->
+        open_vehicles = track_open_vehicles_cancel(comm, vehicle_id)
+        comm = %{comm | open_vehicles: open_vehicles}
+
+        if :queue.is_empty(queue) do
+          # this case shouldn't be possible (we delete empty queues) but we handle it anyways -ps
+          # coveralls-ignore-start
+          {:ok, comm, []}
+          # coveralls-ignore-stop
+        else
+          pretend_cancel(comm, query)
+        end
+
+      :error ->
+        # no open requests for this vehicle, nothing to do!
+        {:ok, comm, []}
+    end
+  end
+
   def stream(%__MODULE__{} = comm, message) do
     with {:ok, transport, results} <- Transport.stream(comm.transport, message),
          {:ok, comm} <- check_stale_queries(comm) do
       comm = %{comm | transport: transport}
       Enum.reduce_while(results, {:ok, comm, []}, &handle_stream_results/2)
+    end
+  end
+
+  defp pretend_cancel(comm, q) do
+    cancel_query = Query.update(q, type: :cancel)
+    approach_counts = update_approach_counts(comm, cancel_query)
+
+    original_event_time_iso =
+      q.event_time
+      |> DateTime.from_unix!(:native)
+      |> DateTime.truncate(:second)
+      |> DateTime.to_iso8601()
+
+    event_time_iso = DateTime.to_iso8601(DateTime.utc_now())
+
+    case send_query(comm, cancel_query) do
+      {:ok, transport} ->
+        # we put the connection into the :awaiting_ok state to eat the
+        # response to our fake cancel message.
+        Logger.info(
+          "sending fake cancel after vehicle timeout alias=#{q.intersection_alias} pid=#{
+            inspect(self())
+          } type=:cancel q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
+            event_time_iso
+          } original_event_time=#{original_event_time_iso}"
+        )
+
+        comm = %{
+          comm
+          | transport: transport,
+            approach_counts: approach_counts,
+            connection_state: :awaiting_ok
+        }
+
+        {:ok, comm, []}
+
+      {:error, e} ->
+        do_close(comm, e, [])
     end
   end
 
@@ -273,7 +395,16 @@ defmodule Tablespoon.Communicator.Modem do
         {:failed, q, reason}
       end
 
+    # cancel keep-alive timer
     _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
+
+    # cancel any open vehicle timers
+    _ =
+      for q <- Map.values(comm.open_vehicles),
+          ref <- :queue.to_list(q) do
+        _ = Process.cancel_timer(ref)
+      end
+
     comm = %__MODULE__{transport: comm.transport, expect_ok?: comm.expect_ok?}
     {:ok, comm, events ++ failures ++ [{:error, reason}]}
   end
