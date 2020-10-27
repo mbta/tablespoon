@@ -32,16 +32,16 @@ defmodule Tablespoon.Application do
 
   def configs do
     with path when is_binary(path) <- Application.get_env(:tablespoon, :configs),
-         {:ok, data} <- File.read("priv/intersections.json") do
+         {{:ok, data}, _path} <- {File.read(path), path} do
       data
       |> strip_bom()
       |> Jason.decode!()
       |> Enum.map(&Config.from_json/1)
     else
-      {:error, e} ->
+      {{:error, e}, path} ->
         _ =
           Logger.warn(fn ->
-            "unable to read intersection configuration: #{inspect(e)}"
+            "unable to read intersection configuration from #{inspect(path)}: #{inspect(e)}"
           end)
 
         []
