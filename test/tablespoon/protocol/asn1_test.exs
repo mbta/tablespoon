@@ -39,6 +39,15 @@ defmodule Tablespoon.Protocol.ASN1Test do
       assert actual == expected
     end
 
+    test "handles incorrect length BER packet" do
+      # this case isn't often hit by the below property, so we add an
+      # explicit test to not freak-out Codecov.
+      packet = <<3, 129>>
+      expected = {:error, :wrong_length}
+      actual = decode(packet)
+      assert actual == expected
+    end
+
     property "does not crash when receiving invalid packets" do
       check all(packet <- modified_packet(@encoded_sample)) do
         case decode(packet) do

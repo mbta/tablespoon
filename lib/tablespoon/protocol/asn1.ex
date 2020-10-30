@@ -73,7 +73,7 @@ defmodule Tablespoon.Protocol.ASN1 do
 
   There are two cases:
   - length < 128: high bit is 0, length is the 7 low bits
-  - length > 128: high bit is 1, length of length octets is the low 7 bits
+  - length >= 128: high bit is 1, length of length octets is the low 7 bits
   """
   @spec decode_ber_length(binary) :: {:ok, non_neg_integer, binary} | {:error, :wrong_length}
   def decode_ber_length(<<1::integer-1, length_bytes::big-integer-7, rest::binary>>) do
@@ -130,7 +130,7 @@ defmodule Tablespoon.Protocol.ASN1 do
     end
   end
 
-  defp decode_object_identifier(binary, acc \\ [], counter \\ nil)
+  defp decode_object_identifier(binary, acc \\ [], counter \\ 0)
 
   defp decode_object_identifier("", acc, _) do
     :lists.reverse(acc)
@@ -151,12 +151,7 @@ defmodule Tablespoon.Protocol.ASN1 do
          acc,
          counter
        ) do
-    counter =
-      if is_nil(counter) do
-        128 * value
-      else
-        128 * counter + value
-      end
+    counter = 128 * (counter + value)
 
     decode_object_identifier(rest, acc, counter)
   end
@@ -166,12 +161,7 @@ defmodule Tablespoon.Protocol.ASN1 do
          acc,
          counter
        ) do
-    counter =
-      if is_nil(counter) do
-        value
-      else
-        counter + value
-      end
+    counter = counter + value
 
     decode_object_identifier(rest, [counter | acc])
   end
