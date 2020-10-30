@@ -30,26 +30,18 @@ defmodule Tablespoon.Application do
     :ok
   end
 
-  def configs do
-    with path when is_binary(path) <- Application.get_env(:tablespoon, :configs),
-         {{:ok, data}, _path} <- {File.read(path), path} do
-      data
-      |> strip_bom()
-      |> Jason.decode!()
-      |> Enum.map(&Config.from_json/1)
-    else
-      {{:error, e}, path} ->
-        _ =
-          Logger.warn(fn ->
-            "unable to read intersection configuration from #{inspect(path)}: #{inspect(e)}"
-          end)
+  def configs(data \\ Application.get_env(:tablespoon, :configs))
 
-        []
+  def configs(data) when is_binary(data) do
+    data
+    |> strip_bom()
+    |> Jason.decode!()
+    |> Enum.map(&Config.from_json/1)
+  end
 
-      nil ->
-        # quietly don't load intersections, for testing
-        []
-    end
+  def configs(nil) do
+    # quietly don't load intersections, for testing
+    []
   end
 
   @doc """

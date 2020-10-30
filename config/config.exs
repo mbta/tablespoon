@@ -27,8 +27,14 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+intersections =
+  case File.read("priv/intersections.json") do
+    {:ok, data} -> data
+    _ -> nil
+  end
+
 config :tablespoon,
-  configs: "priv/intersections.json",
+  configs: intersections,
   fuse_options: {
     # tolerate 5 failures in 5 minutes
     {:standard, 5, 300_000},
