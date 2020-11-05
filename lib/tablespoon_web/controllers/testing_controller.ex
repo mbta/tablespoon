@@ -5,6 +5,10 @@ defmodule TablespoonWeb.TestingController do
   use TablespoonWeb, :controller
 
   def index(conn, _params) do
-    send_file(conn, 200, "priv/testing.html")
+    testing_path = Application.app_dir(:tablespoon, "priv/testing.html")
+
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_file(200, testing_path)
   end
 end
