@@ -22,7 +22,6 @@ defmodule Tablespoon.Transport.TCP do
 
   @impl Tablespoon.Transport
   def new(opts) do
-    opts = Keyword.update!(opts, :host, &:erlang.binary_to_list/1)
     struct!(__MODULE__, opts)
   end
 
@@ -30,17 +29,31 @@ defmodule Tablespoon.Transport.TCP do
   def connect(%__MODULE__{} = tcp) do
     if tcp.socket do
       _ = :gen_tcp.close(tcp.socket)
+      log_close(tcp)
     end
 
-    with {:ok, socket} <-
-           :gen_tcp.connect(
-             tcp.host,
-             tcp.port,
-             @tcp_opts,
-             @connect_timeout
-           ) do
-      tcp = %{tcp | socket: socket}
-      {:ok, tcp}
+    case :gen_tcp.connect(
+           :erlang.binary_to_list(tcp.host),
+           tcp.port,
+           @tcp_opts,
+           @connect_timeout
+         ) do
+      {:ok, socket} ->
+        _ =
+          Logger.info(
+            "#{__MODULE__} connected uri=#{tcp.host}:#{tcp.port} socket=#{inspect(socket)}"
+          )
+
+        tcp = %{tcp | socket: socket}
+        {:ok, tcp}
+
+      {:error, e} ->
+        _ =
+          Logger.info(
+            "#{__MODULE__} failed to connect to uri=#{tcp.host}:#{tcp.port} error=#{inspect(e)}"
+          )
+
+        {:error, e}
     end
   end
 
@@ -57,12 +70,19 @@ defmodule Tablespoon.Transport.TCP do
   end
 
   def stream(%__MODULE__{socket: socket} = tcp, {:tcp_error, socket, error}) do
-    _ = Logger.warn("unexpected TCP error socket=#{inspect(socket)} error=#{inspect(error)}")
+    _ =
+      Logger.warn(
+        "#{__MODULE__} unexpected error uri=#{tcp.host}:#{tcp.port} socket=#{inspect(socket)} error=#{
+          inspect(error)
+        }"
+      )
+
     # treat it as a closed connection
     stream(tcp, {:tcp_closed, socket})
   end
 
   def stream(%__MODULE__{socket: socket} = tcp, {:tcp_closed, socket}) do
+    log_close(tcp)
     :ok = :gen_tcp.close(socket)
     tcp = %{tcp | socket: nil}
     {:ok, tcp, [:closed]}
@@ -70,5 +90,14 @@ defmodule Tablespoon.Transport.TCP do
 
   def stream(%__MODULE__{}, _) do
     :unknown
+  end
+
+  defp log_close(tcp) do
+    _ =
+      Logger.info(
+        "#{__MODULE__} connection closed uri=#{tcp.host}:#{tcp.port} socket=#{inspect(tcp.socket)}"
+      )
+
+    :ok
   end
 end
