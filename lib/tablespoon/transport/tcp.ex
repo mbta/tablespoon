@@ -5,7 +5,7 @@ defmodule Tablespoon.Transport.TCP do
   To use:
 
   tcp = TCP.new(host: host, port: port)
-  {:ok, tcp} = UDP.send(tcp, "packet")
+  {:ok, tcp} = TCP.send(tcp, "packet")
   receive do
     x ->
       {:ok, tcp, results} = TCP.stream(tcp, x)
