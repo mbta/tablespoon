@@ -39,9 +39,13 @@ defmodule Tablespoon.Transport.TCP do
            @connect_timeout
          ) do
       {:ok, socket} ->
+        {:ok, local_port} = :inet.port(socket)
+
         _ =
           Logger.info(
-            "#{__MODULE__} connected uri=#{tcp.host}:#{tcp.port} socket=#{inspect(socket)}"
+            "#{__MODULE__} connected uri=#{tcp.host}:#{tcp.port} local_port=#{local_port} socket=#{
+              inspect(socket)
+            }"
           )
 
         tcp = %{tcp | socket: socket}
