@@ -7,7 +7,16 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   alias Tablespoon.Transport
   require Logger
 
-  defstruct [:transport, :address, :id_fn, :max_in_flight, buffer: "", in_flight: %{}]
+  defstruct [
+    :transport,
+    :address,
+    :id_fn,
+    :max_in_flight,
+    :timeout,
+    :timeout_ref,
+    buffer: "",
+    in_flight: %{}
+  ]
 
   def start_link({parent, name}) do
     GenServer.start_link(__MODULE__, parent, name: name)
@@ -32,6 +41,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
        %__MODULE__{
          transport: transport,
          address: parent.address,
+         timeout: parent.timeout,
          max_in_flight: parent.max_in_flight,
          id_fn: id_fn
        }}
@@ -42,6 +52,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   def handle_call({:send, key, iodata}, _from, state) do
     case do_send(key, iodata, state) do
       {:ok, state} ->
+        state = set_timer(state)
         {:reply, :ok, state}
 
       {:error, _} = e ->
@@ -50,6 +61,18 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   end
 
   @impl GenServer
+  def handle_info(message, state)
+
+  def handle_info(:timeout, state) do
+    Logger.info(
+      "#{__MODULE__} timed out after #{state.timeout} pid=#{inspect(self())} in_flight=#{
+        map_size(state.in_flight)
+      }"
+    )
+
+    {:stop, :normal, state}
+  end
+
   def handle_info(message, state) do
     %{transport: transport} = state
 
@@ -90,6 +113,21 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
     {:error, :too_many_in_flight}
   end
 
+  defp cancel_timer(%__MODULE__{timeout_ref: ref} = state) when is_reference(ref) do
+    _ = Process.cancel_timer(ref)
+    %{state | timeout_ref: nil}
+  end
+
+  defp cancel_timer(%__MODULE__{} = state) do
+    state
+  end
+
+  defp set_timer(%__MODULE__{} = state) do
+    state = cancel_timer(state)
+    ref = Process.send_after(self(), :timeout, state.timeout)
+    %{state | timeout_ref: ref}
+  end
+
   defp handle_message({:data, data}, state) do
     handle_buffer(%{state | buffer: state.buffer <> data})
   end
@@ -117,6 +155,14 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
     with {:ok, request_id} <- state.id_fn.(pmpp.body),
          {{pid, ref}, in_flight} <- Map.pop(state.in_flight, request_id) do
       Kernel.send(pid, {ref, {:data, pmpp.body}})
+
+      state =
+        if in_flight == %{} do
+          cancel_timer(state)
+        else
+          state
+        end
+
       handle_buffer(%{state | in_flight: in_flight})
     else
       error ->

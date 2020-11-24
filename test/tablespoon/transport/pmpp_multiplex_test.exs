@@ -112,6 +112,14 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       assert {:ok, %PMPPMultiplex{}, [{:data, "-4"}]} = receive_next_message(t)
     end
 
+    test "closes the child if a response isn't received by the timeout" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 11, id_mfa: @id_mfa, timeout: 1)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      assert {:ok, t} = PMPPMultiplex.send(t, "-3")
+
+      assert {:ok, %PMPPMultiplex{}, [:closed]} = receive_next_message(t)
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
