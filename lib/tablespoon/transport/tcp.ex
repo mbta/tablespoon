@@ -16,6 +16,8 @@ defmodule Tablespoon.Transport.TCP do
 
   @tcp_opts [:binary, {:active, true}, {:nodelay, true}, {:keepalive, true}]
   @connect_timeout 5_000
+  # 30 minutes
+  @keepalive_idle_timeout_s 1800
 
   @enforce_keys [:host, :port]
   defstruct @enforce_keys ++ [:socket]
@@ -47,6 +49,21 @@ defmodule Tablespoon.Transport.TCP do
               inspect(socket)
             }"
           )
+
+        case set_tcp_keepalive_timeout(socket) do
+          :ok ->
+            :ok
+
+          error ->
+            _ =
+              Logger.info(
+                "#{__MODULE__} unable to set TCP keepalive socket=#{inspect(socket)} error=#{
+                  inspect(error)
+                }"
+              )
+
+            :ok
+        end
 
         tcp = %{tcp | socket: socket}
         {:ok, tcp}
@@ -95,6 +112,29 @@ defmodule Tablespoon.Transport.TCP do
   def stream(%__MODULE__{}, _) do
     :unknown
   end
+
+  @doc """
+  Set the TCP KeepAlive timeout to a new value.
+
+  This uses an OS-specific constant, defined by tcp_keepidle/1.
+  """
+  @spec set_tcp_keepalive_timeout(port) :: :ok | {:error, term}
+  def set_tcp_keepalive_timeout(socket) do
+    ipproto_tcp = 6
+
+    with {:ok, tcp_keepidle} <- tcp_keepidle(:os.type()),
+         value = <<@keepalive_idle_timeout_s::native-integer-32>>,
+         :ok <- :inet.setopts(socket, [{:raw, ipproto_tcp, tcp_keepidle, value}]) do
+      :ok
+    end
+  end
+
+  # lazily based on the values Go uses: https://github.com/golang/go/search?p=1&q=TCP_KEEPIDLE
+  defp tcp_keepidle({:unix, :darwin}), do: {:ok, 16}
+  defp tcp_keepidle({:unix, :linux}), do: {:ok, 4}
+  defp tcp_keepidle({:unix, :freebsd}), do: {:ok, 256}
+  defp tcp_keepidle({:unix, :netbsd}), do: {:ok, 3}
+  defp tcp_keepidle(os), do: {:error, {:unknown_os, os}}
 
   defp log_close(tcp) do
     _ =
