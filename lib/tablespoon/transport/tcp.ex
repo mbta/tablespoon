@@ -14,13 +14,14 @@ defmodule Tablespoon.Transport.TCP do
   require Logger
   @behaviour Tablespoon.Transport
 
-  @tcp_opts [:binary, {:active, true}, {:nodelay, true}, {:keepalive, true}]
+  @tcp_always_opts [:binary, {:active, true}]
+  @tcp_default_opts [{:nodelay, true}, {:keepalive, true}]
   @connect_timeout 5_000
   # 30 minutes
   @keepalive_idle_timeout_s 1800
 
   @enforce_keys [:host, :port]
-  defstruct @enforce_keys ++ [:socket]
+  defstruct @enforce_keys ++ [:socket, opts: @tcp_default_opts]
 
   @impl Tablespoon.Transport
   def new(opts) do
@@ -37,7 +38,7 @@ defmodule Tablespoon.Transport.TCP do
     case :gen_tcp.connect(
            :erlang.binary_to_list(tcp.host),
            tcp.port,
-           @tcp_opts,
+           @tcp_always_opts ++ tcp.opts,
            @connect_timeout
          ) do
       {:ok, socket} ->
