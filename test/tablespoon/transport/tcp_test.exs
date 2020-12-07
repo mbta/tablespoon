@@ -65,4 +65,19 @@ defmodule Tablespoon.Transport.TCPTest do
       assert TCP.stream(tcp, :other_message) == :unknown
     end
   end
+
+  describe "error states" do
+    test "the connection is closed if the owning process stops", %{
+      listener: listener,
+      listener_port: listener_port
+    } do
+      {:ok, pid} =
+        Agent.start_link(fn -> TCP.connect(TCP.new(host: @localhost, port: listener_port)) end)
+
+      {:ok, accept} = :gen_tcp.accept(listener)
+
+      :ok = Agent.stop(pid)
+      assert_receive {:tcp_closed, ^accept}
+    end
+  end
 end
