@@ -17,11 +17,12 @@ defmodule Tablespoon.Transport.TCP do
   @tcp_always_opts [:binary, {:active, true}]
   @tcp_default_opts [{:nodelay, true}, {:keepalive, true}]
   @connect_timeout 5_000
-  # 30 minutes
-  @keepalive_idle_timeout_s 1800
+  # 2 hours
+  @keepalive_timeout_s 7_200
 
   @enforce_keys [:host, :port]
-  defstruct @enforce_keys ++ [:socket, opts: @tcp_default_opts]
+  defstruct @enforce_keys ++
+              [:socket, keepalive_timeout_s: @keepalive_timeout_s, opts: @tcp_default_opts]
 
   @impl Tablespoon.Transport
   def new(opts) do
@@ -51,20 +52,7 @@ defmodule Tablespoon.Transport.TCP do
             }"
           )
 
-        case set_tcp_keepalive_timeout(socket) do
-          :ok ->
-            :ok
-
-          error ->
-            _ =
-              Logger.info(
-                "#{__MODULE__} unable to set TCP keepalive socket=#{inspect(socket)} error=#{
-                  inspect(error)
-                }"
-              )
-
-            :ok
-        end
+        _ = set_tcp_keepalive_timeout(socket, tcp.keepalive_timeout_s)
 
         tcp = %{tcp | socket: socket}
         {:ok, tcp}
@@ -119,12 +107,13 @@ defmodule Tablespoon.Transport.TCP do
 
   This uses an OS-specific constant, defined by tcp_keepidle/1.
   """
-  @spec set_tcp_keepalive_timeout(port) :: :ok | {:error, term}
-  def set_tcp_keepalive_timeout(socket) do
+  @spec set_tcp_keepalive_timeout(port, pos_integer) :: :ok | {:error, term}
+  def set_tcp_keepalive_timeout(socket, keepalive_s)
+      when is_port(socket) and is_integer(keepalive_s) and keepalive_s > 0 do
     ipproto_tcp = 6
 
     with {:ok, tcp_keepidle} <- tcp_keepidle(:os.type()),
-         value = <<@keepalive_idle_timeout_s::native-integer-32>>,
+         value = <<keepalive_s::native-integer-32>>,
          :ok <- :inet.setopts(socket, [{:raw, ipproto_tcp, tcp_keepidle, value}]) do
       :ok
     end
