@@ -53,7 +53,9 @@ defmodule TablespoonTcp.ProtocolTest do
   describe "handle_buffer/1" do
     test "returns a list of queries and a reply" do
       state = %{buffer: @data}
-      assert {[:existing, query], {:noreply, %{buffer: ""}}} = handle_buffer({[:existing], state})
+
+      assert {[:existing, _query], {:noreply, %{buffer: ""}}} =
+               handle_buffer({[:existing], state})
     end
 
     test "returns more queries if they're in the buffer" do
