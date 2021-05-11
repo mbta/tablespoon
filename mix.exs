@@ -10,12 +10,8 @@ defmodule Tablespoon.MixProject do
       compilers: [:phoenix] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      preferred_cli_env: [
-        "coveralls.html": :test,
-        "coveralls.json": :test
-      ],
       test_coverage: [
-        tool: ExCoveralls
+        tool: LcovEx
       ],
       dialyzer: [
         plt_add_deps: :transitive,
@@ -52,7 +48,7 @@ defmodule Tablespoon.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
-      {:excoveralls, "~> 0.11", only: [:test], runtime: false},
+      {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
       {:stream_data, "~> 0.5.0", only: [:test]},
       {:dialyxir, "~> 1.1.0", only: [:dev, :test], runtime: false},
       {:logger_splunk_backend, "~> 2.0", only: [:prod]},
