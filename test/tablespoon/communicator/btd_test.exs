@@ -38,16 +38,6 @@ defmodule Tablespoon.Communicator.BtdTest do
           event_time: System.system_time()
         )
 
-      comm =
-        Btd.new(
-          FakeTransport.new(),
-          group: @group,
-          intersection_id: @intersection_id
-        )
-
-      {:ok, comm, []} = Btd.connect(comm)
-      {:ok, comm, []} = Btd.send(comm, query)
-
       ntcip_message = %NTCIP.PriorityRequest{
         id: 1,
         vehicle_id: "1",
@@ -59,19 +49,7 @@ defmodule Tablespoon.Communicator.BtdTest do
         intersection_id: @intersection_id
       }
 
-      ntcip =
-        NTCIP.encode(%NTCIP{
-          group: @group,
-          pdu_type: :response,
-          request_id: 0,
-          message: ntcip_message
-        })
-
-      {:ok, comm, [sent: ^query]} = Btd.stream(comm, ntcip)
-      [sent_packet] = comm.transport.sent
-
-      assert {:ok, %NTCIP{group: @group, pdu_type: :set, message: ^ntcip_message}} =
-               NTCIP.decode(sent_packet)
+      assert_sent_query_and_got_message(query, ntcip_message)
     end
 
     test "sends a NTCIP1211 cancel query and receives an ack" do
@@ -86,6 +64,19 @@ defmodule Tablespoon.Communicator.BtdTest do
           event_time: System.system_time()
         )
 
+      ntcip_message = %NTCIP.PriorityCancel{
+        id: 1,
+        vehicle_id: "1",
+        vehicle_class: 2,
+        vehicle_class_level: 0,
+        strategy: 3,
+        intersection_id: @intersection_id
+      }
+
+      assert_sent_query_and_got_message(query, ntcip_message)
+    end
+
+    defp assert_sent_query_and_got_message(query, ntcip_message) do
       comm =
         Btd.new(
           FakeTransport.new(),
@@ -95,15 +86,6 @@ defmodule Tablespoon.Communicator.BtdTest do
 
       {:ok, comm, []} = Btd.connect(comm)
       {:ok, comm, []} = Btd.send(comm, query)
-
-      ntcip_message = %NTCIP.PriorityCancel{
-        id: 1,
-        vehicle_id: "1",
-        vehicle_class: 2,
-        vehicle_class_level: 0,
-        strategy: 3,
-        intersection_id: @intersection_id
-      }
 
       ntcip =
         NTCIP.encode(%NTCIP{
