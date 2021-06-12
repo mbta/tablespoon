@@ -7,6 +7,7 @@ defmodule Tablespoon.QueryTest do
     query =
       new(
         id: "id",
+        source: :testing,
         type: :request,
         vehicle_id: "veh",
         intersection_alias: "int",
@@ -26,6 +27,7 @@ defmodule Tablespoon.QueryTest do
       query =
         new(
           id: "id",
+          source: :testing,
           type: :request,
           vehicle_id: "veh",
           intersection_alias: "int",

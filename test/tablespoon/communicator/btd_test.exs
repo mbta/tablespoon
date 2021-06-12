@@ -30,6 +30,7 @@ defmodule Tablespoon.Communicator.BtdTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -77,6 +78,7 @@ defmodule Tablespoon.Communicator.BtdTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :cancel,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -230,6 +232,7 @@ defmodule Tablespoon.Communicator.BtdTest do
         ) do
       Query.new(
         id: 1,
+        source: :testing,
         type: type,
         vehicle_id: "1",
         intersection_alias: "int",

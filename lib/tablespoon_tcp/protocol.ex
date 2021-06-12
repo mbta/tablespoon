@@ -83,6 +83,7 @@ defmodule TablespoonTcp.Protocol do
 
     Tablespoon.Query.new(
       id: tm.id,
+      source: __MODULE__,
       type: type,
       intersection_alias: intersection_alias,
       approach: approach,

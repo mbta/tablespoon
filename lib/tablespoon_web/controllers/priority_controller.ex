@@ -56,6 +56,7 @@ defmodule TablespoonWeb.PriorityController do
       q =
         Tablespoon.Query.new(
           id: id,
+          source: __MODULE__,
           type: type,
           intersection_alias: intersection_alias,
           approach: approach,
