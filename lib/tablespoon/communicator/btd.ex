@@ -8,7 +8,7 @@ defmodule Tablespoon.Communicator.Btd do
   - id: always 0
   - id in message: increases with each request, up to 255 where it wraps back to 1
   - vehicle_id: the vehicle's ID
-  - vehicle_class: always 2
+  - vehicle_class: configurable, default to 2
   - vehicle_class_level: always 0
   - strategy: 1 - North, 2 - East, 3 - South, 4 - West
   - time_of_service_desired: always 0
@@ -23,7 +23,8 @@ defmodule Tablespoon.Communicator.Btd do
   require Logger
 
   @enforce_keys [:transport, :group, :intersection_id, :ref]
-  defstruct @enforce_keys ++ [timeout: 5_000, next_id: 1, in_flight: %{}]
+  defstruct @enforce_keys ++
+              [source_to_vehicle_class: %{}, timeout: 5_000, next_id: 1, in_flight: %{}]
 
   @impl Tablespoon.Communicator
   def new(transport, opts) do
@@ -93,7 +94,7 @@ defmodule Tablespoon.Communicator.Btd do
     %NTCIP.PriorityRequest{
       id: comm.next_id,
       vehicle_id: q.vehicle_id,
-      vehicle_class: 2,
+      vehicle_class: Map.get(comm.source_to_vehicle_class, q.source, 2),
       vehicle_class_level: 0,
       strategy: ntcip_strategy(q.approach),
       time_of_service_desired: 0,
