@@ -90,6 +90,7 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def init(opts) do
+    Process.flag(:trap_exit, true)
     config = Keyword.fetch!(opts, :config)
     fuse_name = String.to_atom("intersection_fuse_#{config.alias}")
     state = %__MODULE__{config: config, fuse_name: fuse_name}
@@ -219,6 +220,23 @@ defmodule Tablespoon.Intersection do
 
         {:noreply, state, config.warning_timeout_ms}
     end
+  end
+
+  @impl GenServer
+  def terminate(reason, %{config: config} = state) do
+    _ =
+      Logger.info(fn ->
+        "Terminating alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{
+          inspect(self())
+        } reason=#{inspect(reason)}"
+      end)
+
+    {:ok, comm, results} = Communicator.close(config.communicator)
+    config = %{config | communicator: comm}
+    state = %{state | config: config}
+    state = Enum.reduce(results, state, &handle_results/2)
+
+    state
   end
 
   @spec handle_results(Communicator.result(), t()) :: t()
