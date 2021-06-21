@@ -61,12 +61,9 @@ defmodule Tablespoon.Communicator.Modem do
 
   @impl Tablespoon.Communicator
   def connect(%__MODULE__{} = comm) do
-    with {:ok, transport} <- Transport.connect(comm.transport) do
-      failures =
-        for q <- :queue.to_list(comm.queue) do
-          {:failed, q, :reconnect}
-        end
+    {:ok, comm, events} = do_close(comm, :reconnect, [])
 
+    with {:ok, transport} <- Transport.connect(comm.transport) do
       id_ref = make_ref()
 
       connection_state =
@@ -77,15 +74,35 @@ defmodule Tablespoon.Communicator.Modem do
           :connected
         end
 
-      comm = %__MODULE__{
-        id_ref: id_ref,
-        transport: transport,
-        expect_ok?: comm.expect_ok?,
-        connection_state: connection_state
+      comm = %{
+        comm
+        | id_ref: id_ref,
+          transport: transport,
+          expect_ok?: comm.expect_ok?,
+          connection_state: connection_state
       }
 
-      {:ok, comm, failures}
+      {:ok, comm, events}
     end
+  end
+
+  @impl Tablespoon.Communicator
+  def close(%__MODULE__{} = comm) do
+    comm =
+      comm.queue
+      |> :queue.to_list()
+      |> Enum.reduce(comm, fn q, comm ->
+        with %{type: :request} <- q,
+             q = %{q | type: :cancel},
+             {:ok, transport} <- send_query(comm, q) do
+          %{comm | transport: transport}
+        else
+          _ -> comm
+        end
+      end)
+
+    transport = Transport.close(comm.transport)
+    do_close(%{comm | transport: transport}, :close, [])
   end
 
   @impl Tablespoon.Communicator
@@ -244,11 +261,11 @@ defmodule Tablespoon.Communicator.Modem do
         # we put the connection into the :awaiting_ok state to eat the
         # response to our fake cancel message.
         Logger.info(
-          "sending fake cancel after vehicle timeout alias=#{q.intersection_alias} pid=#{
-            inspect(self())
-          } type=:cancel q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-            event_time_iso
-          } original_event_time=#{original_event_time_iso}"
+          "sending fake cancel alias=#{q.intersection_alias} pid=#{inspect(self())} type=:cancel q_id=#{
+            q.id
+          } v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} original_event_time=#{
+            original_event_time_iso
+          }"
         )
 
         comm = %{
@@ -261,7 +278,7 @@ defmodule Tablespoon.Communicator.Modem do
         {:ok, comm, []}
 
       {:error, e} ->
-        do_close(comm, e, [])
+        do_close(comm, e, [], [{:error, e}])
     end
   end
 
@@ -271,7 +288,7 @@ defmodule Tablespoon.Communicator.Modem do
   end
 
   defp handle_stream_results(:closed, {:ok, comm, events}) do
-    {:halt, do_close(comm, :closed, events)}
+    {:halt, do_close(comm, :closed, events, [{:error, :closed}])}
   end
 
   defp handle_buffer(comm, events) do
@@ -385,11 +402,11 @@ defmodule Tablespoon.Communicator.Modem do
     if :queue.is_empty(stale_responses) do
       {:ok, comm}
     else
-      do_close(comm, :stale, [])
+      do_close(comm, :stale, [], [{:error, :stale}])
     end
   end
 
-  defp do_close(comm, reason, events) do
+  defp do_close(comm, reason, events, tail_events \\ []) do
     failures =
       for q <- :queue.to_list(comm.queue) do
         {:failed, q, reason}
@@ -406,6 +423,6 @@ defmodule Tablespoon.Communicator.Modem do
       end
 
     comm = %__MODULE__{transport: comm.transport, expect_ok?: comm.expect_ok?}
-    {:ok, comm, events ++ failures ++ [{:error, reason}]}
+    {:ok, comm, events ++ failures ++ tail_events}
   end
 end
