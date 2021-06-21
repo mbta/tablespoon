@@ -43,6 +43,11 @@ defmodule Tablespoon.Transport.FakeModem do
   end
 
   @impl Tablespoon.Transport
+  def close(%__MODULE__{} = t) do
+    %{t | ref: nil, buffer: ""}
+  end
+
+  @impl Tablespoon.Transport
   def send(%__MODULE__{ref: nil}, _) do
     {:error, :not_connected}
   end

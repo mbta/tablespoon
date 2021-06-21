@@ -184,6 +184,11 @@ defmodule Echo do
   end
 
   @impl Tablespoon.Transport
+  def close(%__MODULE__{} = t) do
+    {:ok, %{t | ref: nil}}
+  end
+
+  @impl Tablespoon.Transport
   def send(%__MODULE__{ref: ref} = t, iodata) when is_reference(ref) do
     binary = IO.iodata_to_binary(iodata)
 

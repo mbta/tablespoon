@@ -66,6 +66,16 @@ defmodule Tablespoon.Transport.TCPTest do
     end
   end
 
+  describe "close/1" do
+    test "closes the TCP connection", %{listener: listener, listener_port: listener_port} do
+      {:ok, tcp} = TCP.connect(TCP.new(host: @localhost, port: listener_port))
+      {:ok, accept} = :gen_tcp.accept(listener)
+      tcp = TCP.close(tcp)
+      refute tcp.socket
+      assert_receive {:tcp_closed, ^accept}
+    end
+  end
+
   describe "error states" do
     test "the connection is closed if the owning process stops", %{
       listener: listener,

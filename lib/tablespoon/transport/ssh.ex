@@ -81,6 +81,12 @@ defmodule Tablespoon.Transport.SSH do
   end
 
   @impl Tablespoon.Transport
+  def close(%__MODULE__{} = ssh) do
+    {:ok, ssh, _} = do_close(ssh)
+    ssh
+  end
+
+  @impl Tablespoon.Transport
   def stream(
         %__MODULE__{conn_ref: conn_ref, channel_id: channel_id} = ssh,
         {:ssh_cm, conn_ref, {:data, channel_id, 0, data}}

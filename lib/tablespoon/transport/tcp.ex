@@ -31,10 +31,7 @@ defmodule Tablespoon.Transport.TCP do
 
   @impl Tablespoon.Transport
   def connect(%__MODULE__{} = tcp) do
-    if tcp.socket do
-      _ = :gen_tcp.close(tcp.socket)
-      log_close(tcp)
-    end
+    tcp = close(tcp)
 
     case :gen_tcp.connect(
            :erlang.binary_to_list(tcp.host),
@@ -65,6 +62,19 @@ defmodule Tablespoon.Transport.TCP do
 
         {:error, e}
     end
+  end
+
+  @impl Tablespoon.Transport
+  def close(%__MODULE__{} = tcp) do
+    _ =
+      if tcp.socket do
+        # shutdown for writing to ensure that any buffered data is sent
+        _ = :gen_tcp.shutdown(tcp.socket, :write)
+        :ok = :gen_tcp.close(tcp.socket)
+        log_close(tcp)
+      end
+
+    %{tcp | socket: nil}
   end
 
   @impl Tablespoon.Transport

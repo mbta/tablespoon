@@ -1,7 +1,7 @@
 defmodule Tablespoon.Transport.Fake do
   @moduledoc false
   @behaviour Tablespoon.Transport
-  defstruct connect_count: 0, sent: []
+  defstruct connect_count: 0, close_count: 0, sent: [], open?: false
 
   @impl Tablespoon.Transport
   def new(_opts \\ []) do
@@ -10,7 +10,12 @@ defmodule Tablespoon.Transport.Fake do
 
   @impl Tablespoon.Transport
   def connect(fake) do
-    {:ok, %{fake | connect_count: fake.connect_count + 1}}
+    {:ok, %{fake | connect_count: fake.connect_count + 1, open?: true}}
+  end
+
+  @impl Tablespoon.Transport
+  def close(fake) do
+    %{fake | open?: false}
   end
 
   @impl Tablespoon.Transport

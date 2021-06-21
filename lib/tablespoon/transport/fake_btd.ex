@@ -35,6 +35,11 @@ defmodule Tablespoon.Transport.FakeBtd do
   end
 
   @impl Tablespoon.Transport
+  def close(%__MODULE__{} = t) do
+    %{t | ref: nil}
+  end
+
+  @impl Tablespoon.Transport
   def send(%__MODULE__{ref: nil}, _data) do
     {:error, :not_connected}
   end
