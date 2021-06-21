@@ -119,6 +119,66 @@ defmodule Tablespoon.Communicator.BtdTest do
     end
   end
 
+  describe "close/1" do
+    test "returns a failure for any open message" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      comm =
+        Btd.new(
+          FakeTransport.new(),
+          group: @group,
+          intersection_id: @intersection_id
+        )
+
+      {:ok, comm, []} = Btd.connect(comm)
+      {:ok, comm, []} = Btd.send(comm, query)
+      {:ok, comm, events} = Btd.close(comm)
+
+      refute comm.transport.open?
+      assert events == [{:failed, query, :close}]
+    end
+
+    test "sends a cancel request for any open message" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      comm =
+        Btd.new(
+          FakeTransport.new(),
+          group: @group,
+          intersection_id: @intersection_id
+        )
+
+      {:ok, comm, _} = Btd.connect(comm)
+      {:ok, comm, _} = Btd.send(comm, query)
+      {:ok, comm, _} = Btd.close(comm)
+
+      [_request_packet, cancel_packet] = comm.transport.sent
+
+      assert {:ok,
+              %NTCIP{
+                group: @group,
+                pdu_type: :set,
+                message: %NTCIP.PriorityCancel{intersection_id: @intersection_id}
+              }} = NTCIP.decode(cancel_packet)
+    end
+  end
+
   describe "stream/2" do
     property "always returns a response" do
       check all(query_responses <- list_of(query_response(), min_length: 1)) do
