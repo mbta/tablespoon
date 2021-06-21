@@ -304,6 +304,49 @@ defmodule Tablespoon.Communicator.ModemTest do
     end
   end
 
+  describe "close/1" do
+    test "sends failures for any open requests" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      comm = Modem.new(FakeTransport.new(), expect_ok?: false)
+      {:ok, comm, []} = Modem.connect(comm)
+      {:ok, comm, events} = Modem.send(comm, query)
+      {:ok, comm, events2} = Modem.close(comm)
+
+      refute comm.transport.open?
+
+      events = events ++ events2
+      assert events == [{:failed, query, :close}]
+    end
+
+    test "disables TSP for any open directions" do
+      query =
+        Query.new(
+          id: 1,
+          type: :request,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
+
+      comm = Modem.new(FakeTransport.new(), expect_ok?: false)
+      {:ok, comm, []} = Modem.connect(comm)
+      {:ok, comm, _} = Modem.send(comm, query)
+      {:ok, comm, _} = Modem.close(comm)
+
+      assert comm.transport.sent == ["AT*RELAYOUT4=1\n", "AT*RELAYOUT4=0\n"]
+    end
+  end
+
   defp process_data(comm, datas, events) do
     Enum.reduce_while(datas, {:ok, comm, events}, fn data, {:ok, comm, events} ->
       case Modem.stream(comm, data) do
