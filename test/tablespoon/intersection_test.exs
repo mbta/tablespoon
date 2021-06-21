@@ -6,6 +6,8 @@ defmodule Tablespoon.IntersectionTest do
   alias Tablespoon.Transport.FakeModem
   import ExUnit.CaptureLog
 
+  @moduletag :capture_log
+
   @alias "test_alias"
   @config %Config{
     alias: @alias,
@@ -100,6 +102,46 @@ defmodule Tablespoon.IntersectionTest do
         end)
 
       assert log =~ "Query received for invalid Intersection alias=test_alias_invalid"
+    end
+
+    test "logs a message if the server is terminated before the response comes back" do
+      config = %{
+        @config
+        | alias: "test_supervisor_stop",
+          communicator: Modem.new(FakeModem.new(delay_range: 10_000..10_000))
+      }
+
+      # run under a supervisor to ensure we're trapping exits. If we call
+      # GenServer.stop/1 directly, the terminate/2 callback is always called.
+      {:ok, supervisor_pid} =
+        Supervisor.start_link(
+          [
+            {Intersection, config: config}
+          ],
+          strategy: :one_for_one
+        )
+
+      query =
+        Query.new(
+          id: "test_response_during_close",
+          type: :request,
+          intersection_alias: config.alias,
+          approach: :north,
+          vehicle_id: "vehicle_id",
+          vehicle_latitude: -1.2,
+          vehicle_longitude: 3.4,
+          event_time: 0
+        )
+
+      :ok = Intersection.send_query(query)
+
+      log =
+        capture_log(fn ->
+          :ok = Supervisor.stop(supervisor_pid)
+        end)
+
+      assert log =~ "Terminating alias=#{config.alias}"
+      assert log =~ "Failure - alias=#{config.alias}"
     end
   end
 
