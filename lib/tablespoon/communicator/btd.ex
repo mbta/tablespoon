@@ -38,19 +38,34 @@ defmodule Tablespoon.Communicator.Btd do
   end
 
   @impl Tablespoon.Communicator
+  def close(%__MODULE__{} = comm) do
+    # send cancellations for requests
+    {comm, events} =
+      comm.in_flight
+      |> Map.values()
+      |> Enum.reduce({comm, []}, fn {q, timer}, {comm, events} ->
+        _ = Process.cancel_timer(timer)
+        events = [{:failed, q, :close} | events]
+
+        with %{type: :request} <- q,
+             q = %{q | type: :cancel},
+             {:ok, transport} <- raw_send(comm, q) do
+          {%{comm | transport: transport}, events}
+        else
+          _ -> {comm, events}
+        end
+      end)
+
+    events = Enum.reverse(events)
+
+    transport = Transport.close(comm.transport)
+    comm = %{comm | transport: transport, next_id: 1, in_flight: %{}}
+    {:ok, comm, events}
+  end
+
+  @impl Tablespoon.Communicator
   def send(%__MODULE__{} = comm, %Query{} = q) do
-    # ensure the request ID is always one byte
-    request_id = UniqueRangeCounter.unique_integer(:btd_request_id, -128, 127)
-
-    ntcip =
-      NTCIP.encode(%NTCIP{
-        group: comm.group,
-        pdu_type: :set,
-        request_id: request_id,
-        message: ntcip_message(comm, q)
-      })
-
-    case Transport.send(comm.transport, ntcip) do
+    case raw_send(comm, q) do
       {:ok, transport} ->
         # send ourselves a message to bail out if we don't get a response
         timer = send_after(self(), {comm.ref, :timeout, comm.next_id, q}, comm.timeout)
@@ -87,6 +102,21 @@ defmodule Tablespoon.Communicator.Btd do
       comm = %{comm | transport: transport}
       Enum.reduce_while(results, {:ok, comm, []}, &handle_stream_results/2)
     end
+  end
+
+  defp raw_send(comm, q) do
+    # ensure the request ID is always one byte
+    request_id = UniqueRangeCounter.unique_integer(:btd_request_id, -128, 127)
+
+    ntcip =
+      NTCIP.encode(%NTCIP{
+        group: comm.group,
+        pdu_type: :set,
+        request_id: request_id,
+        message: ntcip_message(comm, q)
+      })
+
+    Transport.send(comm.transport, ntcip)
   end
 
   defp ntcip_message(comm, %{type: :request} = q) do
