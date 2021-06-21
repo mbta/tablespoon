@@ -22,6 +22,10 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
     GenServer.start_link(__MODULE__, parent, name: name)
   end
 
+  def close({pid, _ref}) do
+    GenServer.call(pid, :close)
+  end
+
   def send({pid, ref}, iodata) do
     GenServer.call(pid, {:send, {self(), ref}, iodata})
   end
@@ -49,6 +53,11 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
   end
 
   @impl GenServer
+  def handle_call(:close, _from, state) do
+    transport = Transport.close(state.transport)
+    {:stop, :normal, %{state | transport: transport}}
+  end
+
   def handle_call({:send, key, iodata}, _from, state) do
     case do_send(key, iodata, state) do
       {:ok, state} ->

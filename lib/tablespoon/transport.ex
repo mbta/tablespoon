@@ -9,6 +9,7 @@ defmodule Tablespoon.Transport do
 
   @callback new(Keyword.t()) :: t
   @callback connect(t) :: {:ok, t} | {:error, error}
+  @callback close(t) :: t
   @callback stream(t, term) :: {:ok, t, [result]} | {:error, error} | :unknown
   @callback send(t, iodata) :: {:ok, t} | {:error, error}
 
@@ -16,6 +17,12 @@ defmodule Tablespoon.Transport do
   @spec connect(t) :: {:ok, t} | {:error, error}
   def connect(struct) do
     struct.__struct__.connect(struct)
+  end
+
+  @doc "Call close/1 on the implementation struct"
+  @spec close(t) :: t
+  def close(struct) do
+    struct.__struct__.close(struct)
   end
 
   @doc "Call stream/2 on the implementation struct"
