@@ -218,6 +218,13 @@ defmodule Tablespoon.Intersection do
             } pid=#{inspect(self())} message=#{inspect(message)}"
           end)
 
+        _ =
+          Logger.debug(fn ->
+            "unexpected message debug alias=#{config.alias} config=#{
+              inspect(config, limit: :infinity)
+            }"
+          end)
+
         {:noreply, state, config.warning_timeout_ms}
     end
   end
