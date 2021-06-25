@@ -32,8 +32,11 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
   end
 
   @impl Tablespoon.Transport
-  def close(%__MODULE__{from: {_pid, ref} = from} = t) when from != nil do
-    _ = Process.demonitor(ref, [:flush])
+  def close(%__MODULE__{from: from} = t) when from != nil do
+    with {_pid, ref} <- from do
+      Process.demonitor(ref, [:flush])
+    end
+
     _ = __MODULE__.Child.close(from)
     %{t | from: nil}
   end
