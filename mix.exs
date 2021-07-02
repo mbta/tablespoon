@@ -54,7 +54,7 @@ defmodule Tablespoon.MixProject do
       {:logger_splunk_backend, "~> 2.0", only: [:prod]},
       {:logster, "~> 1.0"},
       {:ehmon, github: "mbta/ehmon", branch: "master", only: [:prod]},
-      {:fuse, "~> 2.4.2"},
+      {:fuse, "~> 2.5.0"},
       {:ranch, "~> 1.7.1"}
     ]
   end
