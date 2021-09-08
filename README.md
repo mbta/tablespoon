@@ -1,5 +1,5 @@
 # Tablespoon
-[![Build Status](https://semaphoreci.com/api/v1/projects/f78f778a-9e50-4b36-8471-7c0051b258f5/2867827/shields_badge.svg)](https://semaphoreci.com/mbta/tablespoon) [![codecov](https://codecov.io/gh/mbta/tablespoon/branch/master/graph/badge.svg?token=bTJrKzIPVS)](https://codecov.io/gh/mbta/tablespoon)
+[![Elixir CI](https://github.com/mbta/tablespoon/actions/workflows/elixir.yml/badge.svg)](https://github.com/mbta/tablespoon/actions/workflows/elixir.yml)
 
 TSP, but bigger
 
