@@ -7,6 +7,7 @@ defmodule Tablespoon.Intersection do
   alias __MODULE__.Config
   alias Tablespoon.{Communicator, Query}
 
+  @retry_scale 500
   # how long to wait before trying to reconnect to an intersection at most: 1hr
   @max_reconnect_timeout 3_600_000
 
@@ -314,9 +315,28 @@ defmodule Tablespoon.Intersection do
     end
   end
 
-  defp retry_after(connect_failure_count) do
-    after_time = trunc(500 * :math.pow(2, connect_failure_count))
-    min(after_time, @max_reconnect_timeout)
+  @max_exponent trunc(:math.log2(@max_reconnect_timeout / @retry_scale))
+
+  @doc """
+  How long to wait, after a given number of failures.
+
+  iex> Intersection.retry_after(1)
+  1_000
+
+  iex> Intersection.retry_after(5)
+  16_000
+
+  iex> Intersection.retry_after(2000)
+  #{@max_reconnect_timeout}
+  """
+  def retry_after(connect_failure_count)
+
+  def retry_after(connect_failure_count) when connect_failure_count <= @max_exponent do
+    trunc(@retry_scale * :math.pow(2, connect_failure_count))
+  end
+
+  def retry_after(_connect_failure_count) do
+    @max_reconnect_timeout
   end
 
   defp state_no_reply(%{config: %{warning_timeout_ms: timeout}, connected?: true} = state) do

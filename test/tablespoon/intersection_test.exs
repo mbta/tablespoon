@@ -17,6 +17,8 @@ defmodule Tablespoon.IntersectionTest do
     communicator: Modem.new(FakeModem.new())
   }
 
+  doctest Intersection
+
   setup do
     {:ok, _pid} = Intersection.start_link(config: @config)
     :ok
@@ -353,6 +355,14 @@ defmodule Tablespoon.IntersectionTest do
         end)
 
       assert log =~ "error=:blown_fuse"
+    end
+  end
+
+  describe "retry_after/1" do
+    test "does not exceed one hour" do
+      for count <- 0..20 do
+        assert Intersection.retry_after(count) <= 3_600_000, "retry took too long with #{count}"
+      end
     end
   end
 
