@@ -52,7 +52,7 @@ defmodule TablespoonTcp.ProtocolTest do
 
   describe "handle_buffer/1" do
     test "returns a list of queries and a reply" do
-      state = %{buffer: @data}
+      state = %Protocol{buffer: @data}
 
       assert {[:existing, _query], {:noreply, %{buffer: ""}}} =
                handle_buffer({[:existing], state})
@@ -60,13 +60,18 @@ defmodule TablespoonTcp.ProtocolTest do
 
     test "returns more queries if they're in the buffer" do
       buffer = @data <> @data <> "TM"
-      state = %{buffer: buffer}
+      state = %Protocol{buffer: buffer}
       assert {[_, _], {:noreply, %{buffer: "TM"}}} = handle_buffer({[], state})
     end
 
     @tag :capture_log
     test "stops if there's an error" do
-      state = %{buffer: "invalid"}
+      state = %Protocol{buffer: "invalid"}
+      assert {[], {:stop, :normal, _}} = handle_buffer({[], state})
+    end
+
+    test "ignores HTTP requests" do
+      state = %Protocol{buffer: "GET login?hsgid=00000000"}
       assert {[], {:stop, :normal, _}} = handle_buffer({[], state})
     end
   end
