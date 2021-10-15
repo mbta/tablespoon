@@ -44,8 +44,15 @@ defmodule TablespoonTcp.Protocol do
 
   @spec handle_buffer({[Tablespoon.Query.t()], t()}) :: {[Tablespoon.Query.t()], gen_server_reply}
         when gen_server_reply: {:noreply, t} | {:stop, :normal, t}
+  def handle_buffer(acc)
+
   def handle_buffer({queries, %{buffer: ""} = state}) do
     {Enum.reverse(queries), {:noreply, state}}
+  end
+
+  def handle_buffer({queries, %{buffer: "GET " <> _} = state}) do
+    _ = Logger.info("#{__MODULE__} got HTTP request, ignoring socket=#{inspect(state.socket)}")
+    {Enum.reverse(queries), {:stop, :normal, state}}
   end
 
   def handle_buffer({queries, %{buffer: buffer} = state}) do
@@ -64,7 +71,9 @@ defmodule TablespoonTcp.Protocol do
       {:error, error, _} ->
         _ =
           Logger.error(fn ->
-            "#{__MODULE__} error while parsing error=#{inspect(error)} buffer=#{inspect(buffer)}"
+            "#{__MODULE__} error while parsing socket=#{inspect(state.socket)} error=#{
+              inspect(error)
+            } buffer=#{inspect(buffer, limit: 2048)}"
           end)
 
         {Enum.reverse(queries), {:stop, :normal, state}}
