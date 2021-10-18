@@ -41,6 +41,10 @@ defmodule Tablespoon.Transport.PMPPMultiplex do
     %{t | from: nil}
   end
 
+  def close(%__MODULE__{from: nil} = t) do
+    t
+  end
+
   @impl Tablespoon.Transport
   def send(%__MODULE__{from: from} = t, iodata) when from != nil do
     with :ok <- __MODULE__.Child.send(from, iodata) do

@@ -120,6 +120,11 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       assert {:ok, %PMPPMultiplex{}, [:closed]} = receive_next_message(t)
     end
 
+    test "closing a not-connected transport is a no-op" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 12, id_mfa: @id_mfa)
+      assert PMPPMultiplex.close(t) == t
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
