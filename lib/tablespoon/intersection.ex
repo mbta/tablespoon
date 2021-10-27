@@ -78,7 +78,7 @@ defmodule Tablespoon.Intersection do
     :reconnect_ref,
     connected?: false,
     connect_failure_count: 0,
-    time_fn: &:erlang.time/0
+    time_fn: &__MODULE__.local_time/0
   ]
 
   @typep t :: %__MODULE__{
@@ -337,6 +337,16 @@ defmodule Tablespoon.Intersection do
 
   def retry_after(_connect_failure_count) do
     @max_reconnect_timeout
+  end
+
+  @doc """
+  A {hour, minute, second} tuple in the local timezone.
+  """
+  @spec local_time() :: :calendar.time()
+  @spec local_time(Calendar.time_zone()) :: :calendar.time()
+  def local_time(time_zone \\ Application.fetch_env!(:tablespoon, :time_zone)) do
+    now = DateTime.now!(time_zone)
+    {now.hour, now.minute, now.second}
   end
 
   defp state_no_reply(%{config: %{warning_timeout_ms: timeout}, connected?: true} = state) do

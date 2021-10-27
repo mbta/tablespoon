@@ -366,6 +366,15 @@ defmodule Tablespoon.IntersectionTest do
     end
   end
 
+  describe "local_time/0" do
+    test "returns {hour, minute, second} tuple in the given timezone" do
+      time_zone = "America/Los_Angeles"
+      now = DateTime.now!(time_zone)
+      {hour, minute, second} = Intersection.local_time(time_zone)
+      assert Time.diff(Time.new!(hour, minute, second), now) <= 1
+    end
+  end
+
   defp log_level_info(_) do
     log_level = Logger.level()
 

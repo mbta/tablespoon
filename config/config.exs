@@ -27,6 +27,9 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Use tzdata for time zone info
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+
 intersections =
   case File.read("priv/intersections.json") do
     {:ok, data} -> data
@@ -40,7 +43,8 @@ config :tablespoon,
     {:standard, 5, 300_000},
     # reset the fuse after 60 seconds
     {:reset, 60_000}
-  }
+  },
+  time_zone: "America/New_York"
 
 # connection configuration for the different types of Communicators
 config :tablespoon, Tablespoon.Communicator.Btd,
