@@ -58,6 +58,18 @@ defmodule Tablespoon.Communicator.BtdTest do
         intersection_id: @intersection_id
       }
 
+      ntcip_absolute_message = %NTCIP.PriorityRequestAbsolute{
+        id: 1,
+        vehicle_id: "1",
+        vehicle_class: 2,
+        vehicle_class_level: 0,
+        strategy: 3,
+        time_of_service_desired: 0,
+        time_of_estimated_departure: 0,
+        time_of_request: :erlang.convert_time_unit(query.event_time, :native, :second),
+        intersection_id: @intersection_id
+      }
+
       ntcip =
         NTCIP.encode(%NTCIP{
           group: @group,
@@ -67,10 +79,13 @@ defmodule Tablespoon.Communicator.BtdTest do
         })
 
       {:ok, comm, [sent: ^query]} = Btd.stream(comm, ntcip)
-      [sent_packet] = comm.transport.sent
+      [sent_packet, sent_absolute_packet] = comm.transport.sent
 
       assert {:ok, %NTCIP{group: @group, pdu_type: :set, message: ^ntcip_message}} =
                NTCIP.decode(sent_packet)
+
+      assert {:ok, %NTCIP{group: @group, pdu_type: :set, message: ^ntcip_absolute_message}} =
+               NTCIP.decode(sent_absolute_packet)
     end
 
     test "sends a NTCIP1211 cancel query and receives an ack" do
@@ -168,7 +183,7 @@ defmodule Tablespoon.Communicator.BtdTest do
       {:ok, comm, _} = Btd.send(comm, query)
       {:ok, comm, _} = Btd.close(comm)
 
-      [_request_packet, cancel_packet] = comm.transport.sent
+      [_request_packet, _request_absolute_packet, cancel_packet] = comm.transport.sent
 
       assert {:ok,
               %NTCIP{
