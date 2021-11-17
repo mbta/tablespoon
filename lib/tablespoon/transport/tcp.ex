@@ -122,10 +122,9 @@ defmodule Tablespoon.Transport.TCP do
       when is_port(socket) and is_integer(keepalive_s) and keepalive_s > 0 do
     ipproto_tcp = 6
 
-    with {:ok, tcp_keepidle} <- tcp_keepidle(:os.type()),
-         value = <<keepalive_s::native-integer-32>>,
-         :ok <- :inet.setopts(socket, [{:raw, ipproto_tcp, tcp_keepidle, value}]) do
-      :ok
+    with {:ok, tcp_keepidle} <- tcp_keepidle(:os.type()) do
+      value = <<keepalive_s::native-integer-32>>
+      :inet.setopts(socket, [{:raw, ipproto_tcp, tcp_keepidle, value}])
     end
   end
 
