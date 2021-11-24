@@ -101,8 +101,7 @@ defmodule Tablespoon.Communicator.Modem do
         end
       end)
 
-    transport = Transport.close(comm.transport)
-    do_close(%{comm | transport: transport}, :close, [])
+    do_close(comm, :close, [])
   end
 
   @impl Tablespoon.Communicator
@@ -422,7 +421,9 @@ defmodule Tablespoon.Communicator.Modem do
         _ = Process.cancel_timer(ref)
       end
 
-    comm = %__MODULE__{transport: comm.transport, expect_ok?: comm.expect_ok?}
+    transport = Transport.close(comm.transport)
+
+    comm = %__MODULE__{transport: transport, expect_ok?: comm.expect_ok?}
     {:ok, comm, events ++ failures ++ tail_events}
   end
 end

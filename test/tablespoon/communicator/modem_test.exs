@@ -238,6 +238,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       {:ok, comm, events} = Modem.send(comm, query)
       {:ok, comm, events} = process_data(comm, [{comm.id_ref, :timeout}], events)
       assert events == [{:failed, query, :stale}, {:error, :stale}]
+      refute comm.transport.open?
       assert comm.transport.sent == ["AT*RELAYOUT4=0\n"]
     end
 
