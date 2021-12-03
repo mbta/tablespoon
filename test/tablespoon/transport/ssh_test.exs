@@ -1,6 +1,7 @@
 defmodule Tablespoon.Transport.SSHTest do
   @moduledoc false
-  use ExUnit.Case, async: true
+  use ExUnit.Case
+  import ExUnit.CaptureLog, only: [capture_log: 1]
   alias Tablespoon.Transport.SSH
 
   # from https://www.sftp.net/public-online-sftp-servers
@@ -44,6 +45,19 @@ defmodule Tablespoon.Transport.SSHTest do
       {:ok, messages} = test_stream(ssh)
       unknown_messages = for {:unknown, _} = message <- messages, do: message
       assert unknown_messages == []
+    end
+
+    @tag :rebex
+    test "closing the connection does not log additional messages" do
+      {:ok, ssh} = SSH.connect(new_test())
+
+      log =
+        capture_log(fn ->
+          ssh = SSH.close(ssh)
+          {:ok, _} = test_stream(ssh)
+        end)
+
+      assert log == ""
     end
   end
 

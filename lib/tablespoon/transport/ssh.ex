@@ -82,7 +82,7 @@ defmodule Tablespoon.Transport.SSH do
 
   @impl Tablespoon.Transport
   def close(%__MODULE__{} = ssh) do
-    {:ok, ssh, _} = do_close(ssh)
+    _ = :ssh.close(ssh.conn_ref)
     ssh
   end
 
