@@ -44,9 +44,7 @@ defmodule Tablespoon.Transport.TCP do
 
         _ =
           Logger.info(
-            "#{__MODULE__} connected uri=#{tcp.host}:#{tcp.port} local_port=#{local_port} socket=#{
-              inspect(socket)
-            }"
+            "#{__MODULE__} connected uri=#{tcp.host}:#{tcp.port} local_port=#{local_port} socket=#{inspect(socket)}"
           )
 
         _ = set_tcp_keepalive_timeout(socket, tcp.keepalive_timeout_s)
@@ -92,9 +90,7 @@ defmodule Tablespoon.Transport.TCP do
   def stream(%__MODULE__{socket: socket} = tcp, {:tcp_error, socket, error}) do
     _ =
       Logger.warn(
-        "#{__MODULE__} unexpected error uri=#{tcp.host}:#{tcp.port} socket=#{inspect(socket)} error=#{
-          inspect(error)
-        }"
+        "#{__MODULE__} unexpected error uri=#{tcp.host}:#{tcp.port} socket=#{inspect(socket)} error=#{inspect(error)}"
       )
 
     # treat it as a closed connection

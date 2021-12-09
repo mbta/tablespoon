@@ -1,4 +1,4 @@
-FROM hexpm/elixir:1.11.4-erlang-23.3.4-alpine-3.13.3 as builder
+FROM hexpm/elixir:1.13.1-erlang-24.2-alpine-3.13.6 AS builder
 
 WORKDIR /root
 
@@ -24,9 +24,9 @@ ADD . .
 RUN mix do compile, release
 
 # Second stage: copies the files from the builder stage
-FROM alpine:3.13.3
+FROM alpine:3.13.6
 
-RUN apk add --update libssl1.1 ncurses-libs bash curl dumb-init \
+RUN apk add --update libstdc++ libgcc libssl1.1 ncurses-libs bash curl dumb-init \
     && rm -rf /var/cache/apk
 
 # Create non-root user

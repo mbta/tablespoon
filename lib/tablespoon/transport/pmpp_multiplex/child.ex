@@ -74,9 +74,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
 
   def handle_info(:timeout, state) do
     Logger.info(
-      "#{__MODULE__} timed out after #{state.timeout} pid=#{inspect(self())} in_flight=#{
-        map_size(state.in_flight)
-      }"
+      "#{__MODULE__} timed out after #{state.timeout} pid=#{inspect(self())} in_flight=#{map_size(state.in_flight)}"
     )
 
     {:stop, :normal, state}
@@ -94,9 +92,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
       :unknown ->
         _ =
           Logger.warn(fn ->
-            "unexpected PMPPMultiplex.Child message pid=#{inspect(self())} message=#{
-              inspect(message)
-            }"
+            "unexpected PMPPMultiplex.Child message pid=#{inspect(self())} message=#{inspect(message)}"
           end)
 
         {:noreply, state}
@@ -177,9 +173,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
       error ->
         _ =
           Logger.warn(fn ->
-            "unable to match incoming PMPP message pmpp=#{inspect(pmpp, limit: :infinity)} in_flight=#{
-              inspect(state.in_flight)
-            } error=#{inspect(error)}"
+            "unable to match incoming PMPP message pmpp=#{inspect(pmpp, limit: :infinity)} in_flight=#{inspect(state.in_flight)} error=#{inspect(error)}"
           end)
 
         {:stop, :normal, state}
