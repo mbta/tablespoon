@@ -81,9 +81,7 @@ defmodule TablespoonTcp.Protocol do
   defp handle_decoded_buffer({:error, error, _buffer}, queries, state) do
     _ =
       Logger.error(fn ->
-        "#{__MODULE__} error while parsing socket=#{inspect(state.socket)} error=#{inspect(error)} buffer=#{
-          inspect(state.buffer, limit: 2048)
-        }"
+        "#{__MODULE__} error while parsing socket=#{inspect(state.socket)} error=#{inspect(error)} buffer=#{inspect(state.buffer, limit: 2048)}"
       end)
 
     {Enum.reverse(queries), {:stop, :normal, state}}

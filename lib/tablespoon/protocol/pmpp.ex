@@ -119,13 +119,13 @@ defmodule Tablespoon.Protocol.PMPP do
   def checksum(bytes, fcs \\ 0xFFFF)
 
   def checksum("", fcs) do
-    fcs = fcs ^^^ 0xFFFF
+    fcs = bxor(fcs, 0xFFFF)
     <<fcs::unsigned-little-integer-16>>
   end
 
   def checksum(<<byte::unsigned-integer-8, rest::binary>>, fcs) do
-    index = fcs ^^^ byte &&& 0xFF
-    fcs = (fcs >>> 8) ^^^ fcstab(index)
+    index = bxor(fcs, byte) &&& 0xFF
+    fcs = bxor(fcs >>> 8, fcstab(index))
     checksum(rest, fcs)
   end
 

@@ -260,11 +260,7 @@ defmodule Tablespoon.Communicator.Modem do
         # we put the connection into the :awaiting_ok state to eat the
         # response to our fake cancel message.
         Logger.info(
-          "sending fake cancel alias=#{q.intersection_alias} pid=#{inspect(self())} type=:cancel q_id=#{
-            q.id
-          } v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} original_event_time=#{
-            original_event_time_iso
-          }"
+          "sending fake cancel alias=#{q.intersection_alias} pid=#{inspect(self())} type=:cancel q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} original_event_time=#{original_event_time_iso}"
         )
 
         comm = %{
@@ -344,9 +340,7 @@ defmodule Tablespoon.Communicator.Modem do
         :empty ->
           _ =
             Logger.warn(
-              "#{__MODULE__} unexpected response with empty queue comm=#{inspect(comm)} line=#{
-                inspect(line)
-              }"
+              "#{__MODULE__} unexpected response with empty queue comm=#{inspect(comm)} line=#{inspect(line)}"
             )
 
           []

@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # Always start the server
 config :tablespoon, TablespoonWeb.Endpoint, server: true

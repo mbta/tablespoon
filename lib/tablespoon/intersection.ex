@@ -32,11 +32,7 @@ defmodule Tablespoon.Intersection do
             |> DateTime.truncate(:second)
             |> DateTime.to_iso8601()
 
-          "Query received for invalid Intersection alias=#{q.intersection_alias} pid=#{
-            inspect(self())
-          } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-            event_time_iso
-          }"
+          "Query received for invalid Intersection alias=#{q.intersection_alias} pid=#{inspect(self())} type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso}"
         end)
 
       :ok
@@ -121,11 +117,7 @@ defmodule Tablespoon.Intersection do
           |> DateTime.truncate(:second)
           |> DateTime.to_iso8601()
 
-        "Query - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{
-          inspect(self())
-        } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-          event_time_iso
-        } lat=#{q.vehicle_latitude} lon=#{q.vehicle_longitude}"
+        "Query - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} lat=#{q.vehicle_latitude} lon=#{q.vehicle_longitude}"
       end)
 
     config = %{config | communicator: communicator}
@@ -154,9 +146,7 @@ defmodule Tablespoon.Intersection do
 
           _ =
             Logger.info(fn ->
-              "started Intersection alias=#{config.alias} comm=#{Communicator.name(communicator)} pid=#{
-                inspect(self())
-              }"
+              "started Intersection alias=#{config.alias} comm=#{Communicator.name(communicator)} pid=#{inspect(self())}"
             end)
 
           state
@@ -166,9 +156,7 @@ defmodule Tablespoon.Intersection do
 
           _ =
             Logger.warn(fn ->
-              "unable to start Intersection alias=#{config.alias} comm=#{
-                Communicator.name(config.communicator)
-              } pid=#{inspect(self())} count=#{state.connect_failure_count} error=#{inspect(e)}"
+              "unable to start Intersection alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} count=#{state.connect_failure_count} error=#{inspect(e)}"
             end)
 
           state
@@ -189,9 +177,7 @@ defmodule Tablespoon.Intersection do
     _ =
       if time >= config.warning_not_before_time and time <= config.warning_not_after_time do
         Logger.warn(fn ->
-          "Intersection has not received a message in #{config.warning_timeout_ms}ms - alias=#{
-            config.alias
-          } pid=#{inspect(self())}"
+          "Intersection has not received a message in #{config.warning_timeout_ms}ms - alias=#{config.alias} pid=#{inspect(self())}"
         end)
       end
 
@@ -214,9 +200,7 @@ defmodule Tablespoon.Intersection do
       :unknown ->
         _ =
           Logger.warn(fn ->
-            "unexpected message alias=#{config.alias} comm=#{
-              Communicator.name(config.communicator)
-            } pid=#{inspect(self())} message=#{inspect(message)}"
+            "unexpected message alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} message=#{inspect(message)}"
           end)
 
         {:noreply, state, config.warning_timeout_ms}
@@ -227,9 +211,7 @@ defmodule Tablespoon.Intersection do
   def terminate(reason, %{config: config} = state) do
     _ =
       Logger.info(fn ->
-        "Terminating alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{
-          inspect(self())
-        } reason=#{inspect(reason)}"
+        "Terminating alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} reason=#{inspect(reason)}"
       end)
 
     {:ok, comm, results} = Communicator.close(config.communicator)
@@ -252,13 +234,7 @@ defmodule Tablespoon.Intersection do
 
         processing_time = Query.processing_time(q, :microsecond)
 
-        "Response - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{
-          inspect(self())
-        } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-          event_time_iso
-        } processing_time_us=#{processing_time} lat=#{q.vehicle_latitude} lon=#{
-          q.vehicle_longitude
-        }"
+        "Response - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} processing_time_us=#{processing_time} lat=#{q.vehicle_latitude} lon=#{q.vehicle_longitude}"
       end)
 
     %{state | connect_failure_count: 0}
@@ -281,13 +257,7 @@ defmodule Tablespoon.Intersection do
 
         processing_time = Query.processing_time(q, :microsecond)
 
-        "Failure - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{
-          inspect(self())
-        } type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{
-          event_time_iso
-        } processing_time_us=#{processing_time} error=#{inspect(error)} lat=#{q.vehicle_latitude} lon=#{
-          q.vehicle_longitude
-        }"
+        "Failure - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso} processing_time_us=#{processing_time} error=#{inspect(error)} lat=#{q.vehicle_latitude} lon=#{q.vehicle_longitude}"
       end)
 
     state
@@ -298,9 +268,7 @@ defmodule Tablespoon.Intersection do
 
     _ =
       Logger.warn(fn ->
-        "Lost connection - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{
-          inspect(self())
-        } count=#{state.connect_failure_count} error=#{inspect(error)}"
+        "Lost connection - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} count=#{state.connect_failure_count} error=#{inspect(error)}"
       end)
 
     state
