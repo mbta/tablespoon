@@ -70,6 +70,16 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
       assert {:error, :invalid, ""} = TransitmasterXml.decode(invalid_version)
     end
 
+    test "ignores some special types of invalid packets" do
+      # Microsoft Remote Desktop
+      assert {:error, :ignore, ""} =
+               TransitmasterXml.decode(
+                 <<3, 0, 0, 19, 14, 224, 0, 0, 0, 0, 0, 1, 0, 8, 0, 0, 0, 0, 0>>
+               )
+
+      assert {:error, :ignore, ""} = TransitmasterXml.decode("HELP\r\n")
+    end
+
     property "dropping data returns :too_short error" do
       max_slice = byte_size(@data) - 1
 

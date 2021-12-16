@@ -56,28 +56,37 @@ defmodule TablespoonTcp.Protocol do
   end
 
   def handle_buffer({queries, %{buffer: buffer} = state}) do
-    case TransitmasterXml.decode(buffer) do
-      {:ok, tm, buffer} ->
-        q = as_query(tm)
-        queries = [q | queries]
+    buffer
+    |> TransitmasterXml.decode()
+    |> handle_decoded_buffer(queries, state)
+  end
 
-        state = %{state | buffer: buffer}
-        handle_buffer({queries, state})
+  defp handle_decoded_buffer({:ok, tm, buffer}, queries, state) do
+    q = as_query(tm)
+    queries = [q | queries]
 
-      {:error, :too_short, buffer} ->
-        state = %{state | buffer: buffer}
-        {Enum.reverse(queries), {:noreply, state}}
+    state = %{state | buffer: buffer}
+    handle_buffer({queries, state})
+  end
 
-      {:error, error, _} ->
-        _ =
-          Logger.error(fn ->
-            "#{__MODULE__} error while parsing socket=#{inspect(state.socket)} error=#{
-              inspect(error)
-            } buffer=#{inspect(buffer, limit: 2048)}"
-          end)
+  defp handle_decoded_buffer({:error, :too_short, buffer}, queries, state) do
+    state = %{state | buffer: buffer}
+    {Enum.reverse(queries), {:noreply, state}}
+  end
 
-        {Enum.reverse(queries), {:stop, :normal, state}}
-    end
+  defp handle_decoded_buffer({:error, :ignore, _buffer}, queries, state) do
+    {Enum.reverse(queries), {:stop, :normal, state}}
+  end
+
+  defp handle_decoded_buffer({:error, error, _buffer}, queries, state) do
+    _ =
+      Logger.error(fn ->
+        "#{__MODULE__} error while parsing socket=#{inspect(state.socket)} error=#{inspect(error)} buffer=#{
+          inspect(state.buffer, limit: 2048)
+        }"
+      end)
+
+    {Enum.reverse(queries), {:stop, :normal, state}}
   end
 
   @spec as_query(TransitmasterXml.t()) :: Tablespoon.Query.t()

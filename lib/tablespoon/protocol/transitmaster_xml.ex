@@ -23,13 +23,18 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
           vehicle_longitude: float | nil
         }
 
-  @type error :: :invalid | :too_short
+  @type error :: :invalid | :ignore | :too_short
 
   require Record
   Record.defrecordp(:xmlElement, Record.extract(:xmlElement, from_lib: "xmerl/include/xmerl.hrl"))
   Record.defrecordp(:xmlText, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl"))
 
   @header "TMTSPDATAHEADER"
+  @ignored_prefixes [
+    # Microsoft Remote Desktop
+    <<3, 0, 0, 19, 14, 224>>,
+    "HELP"
+  ]
 
   @spec encode(t) :: iodata
   def encode(%__MODULE__{} = tm) do
@@ -85,6 +90,12 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
 
       binary when is_binary(binary) ->
         {:error, :too_short, all}
+    end
+  end
+
+  for prefix <- @ignored_prefixes do
+    def decode(<<unquote(prefix), _::binary>>) do
+      {:error, :ignore, ""}
     end
   end
 
