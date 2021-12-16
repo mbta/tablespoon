@@ -14,11 +14,16 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.asdf
-          key: ${{ runner.os }}-asdf-v2-${{ hashFiles('.tool-versions') }}
+          key: ${{ runner.os }}-asdf-v3-${{ hashFiles('.tool-versions') }}
         id: asdf-cache
       # only run `asdf install` if we didn't hit the cache
       - uses: asdf-vm/actions/install@v1
         if: steps.asdf-cache.outputs.cache-hit != 'true'
+      - run: |
+          mix local.rebar --force
+          mix local.hex --force
+        if: steps.asdf-cache.outputs.cache-hit != 'true'
+
 
   build:
     name: Build and test
@@ -29,7 +34,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.asdf
-          key: ${{ runner.os }}-asdf-v2-${{ hashFiles('.tool-versions') }}
+          key: ${{ runner.os }}-asdf-v3-${{ hashFiles('.tool-versions') }}
         id: asdf-cache
       - name: Setup ASDF environment
         run: |
@@ -45,13 +50,10 @@ jobs:
         uses: actions/cache@v2
         with:
           path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
+          key: ${{ runner.os }}-mix-v2-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-v2-
       - name: Install dependencies
-        run: |
-          mix local.rebar --force
-          mix local.hex --force
-          mix deps.get
+        run: mix deps.get
       - name: Compile (warnings as errors)
         run: mix compile --force --warnings-as-errors
       - name: Check formatting
