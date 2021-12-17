@@ -125,6 +125,13 @@ defmodule Tablespoon.Transport.PMPPMultiplexTest do
       assert PMPPMultiplex.close(t) == t
     end
 
+    test "connected transports can be closed" do
+      t = PMPPMultiplex.new(transport: Echo.new(), address: 13, id_mfa: @id_mfa)
+      {:ok, t} = PMPPMultiplex.connect(t)
+      t = PMPPMultiplex.close(t)
+      assert {:error, :not_connected} = PMPPMultiplex.send(t, test_message())
+    end
+
     defp assert_from_one_of(x, pairs) do
       pairs =
         for {t, message} = pair <- pairs do
