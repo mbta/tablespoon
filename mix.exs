@@ -44,7 +44,7 @@ defmodule Tablespoon.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.6.0"},
-      {:phoenix_html, "~> 3.1.0"},
+      {:phoenix_html, "~> 3.2.0"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
