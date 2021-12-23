@@ -30,11 +30,6 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
   Record.defrecordp(:xmlText, Record.extract(:xmlText, from_lib: "xmerl/include/xmerl.hrl"))
 
   @header "TMTSPDATAHEADER"
-  @ignored_prefixes [
-    # Microsoft Remote Desktop
-    <<3, 0, 0, 19, 14, 224>>,
-    "HELP"
-  ]
 
   @spec encode(t) :: iodata
   def encode(%__MODULE__{} = tm) do
@@ -93,12 +88,6 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
     end
   end
 
-  for prefix <- @ignored_prefixes do
-    def decode(<<unquote(prefix), _::binary>>) do
-      {:error, :ignore, ""}
-    end
-  end
-
   def decode(bin) when byte_size(bin) < byte_size(@header) + 6 do
     # if the shared prefix of the two packets isn't the header, then there's
     # no way that the packet will match.
@@ -107,12 +96,12 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
     if :binary.part(bin, 0, min_size) == :binary.part(@header, 0, min_size) do
       {:error, :too_short, bin}
     else
-      {:error, :invalid, ""}
+      {:error, :ignore, ""}
     end
   end
 
   def decode(bin) when is_binary(bin) do
-    {:error, :invalid, ""}
+    {:error, :ignore, ""}
   end
 
   defp encode_tag(tag, value) when is_binary(value) do

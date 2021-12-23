@@ -57,8 +57,6 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
     end
 
     test "invalid packets are rejected" do
-      assert {:error, :invalid, ""} = TransitmasterXml.decode("invalid")
-
       invalid_date_time =
         "TMTSPDATAHEADER000684<?xml version=\"1.0\"?>\r\n<TSP_CHECKOUTMESSAGE>\r\n<GUID>00FCE914-739B-4981-9651-CA5480C8D4C3</GUID>\r\n<TRAFFIC_SIGNAL_EVENT_ID>1</TRAFFIC_SIGNAL_EVENT_ID>\r\n<EVENT_TIME>2018-10Y12T20:59:31.000Z</EVENT_TIME>\r\n<EVENT_GEO_NODE_ABBR>CamGorWB</EVENT_GEO_NODE_ABBR>\r\n<VEHICLE_ID>0002</VEHICLE_ID>\r\n<ROUTE_ABBR>Unknown</ROUTE_ABBR>\r\n<APPROACH_DIRECTION>235</APPROACH_DIRECTION>\r\n<NODE_LATITUDE>42.3526278</NODE_LATITUDE>  \n<NODE_LONGITUDE>-71.1401139</NODE_LONGITUDE>\r\n<VEHICLE_LATITUDE>42.3407551</VEHICLE_LATITUDE>\r\n<VEHICLE_LONGITUDE>-71.063725</VEHICLE_LONGITUDE>\r\n<DEVIATION_FROM_SCHEDULE>0</DEVIATION_FROM_SCHEDULE>\r\n<DISTANCE>305</DISTANCE>\r\n<BUS_LOAD>0</BUS_LOAD>\r\n</TSP_CHECKOUTMESSAGE>\r\n"
 
@@ -70,7 +68,9 @@ defmodule Tablespoon.Protocol.TransitmasterXmlTest do
       assert {:error, :invalid, ""} = TransitmasterXml.decode(invalid_version)
     end
 
-    test "ignores some special types of invalid packets" do
+    test "ignores packets which aren't TM XML" do
+      assert {:error, :ignore, ""} = TransitmasterXml.decode("invalid")
+
       # Microsoft Remote Desktop
       assert {:error, :ignore, ""} =
                TransitmasterXml.decode(
