@@ -129,16 +129,16 @@ defmodule Tablespoon.Communicator.Btd do
 
   defp ntcip_messages(%{type: :request} = q, comm) do
     [
-      %NTCIP.PriorityRequest{
-        id: comm.next_id,
-        vehicle_id: q.vehicle_id,
-        vehicle_class: 2,
-        vehicle_class_level: 0,
-        strategy: ntcip_strategy(q.approach),
-        time_of_service_desired: 0,
-        time_of_estimated_departure: 0,
-        intersection_id: comm.intersection_id
-      },
+      # %NTCIP.PriorityRequest{
+      #   id: comm.next_id,
+      #   vehicle_id: q.vehicle_id,
+      #   vehicle_class: 2,
+      #   vehicle_class_level: 0,
+      #   strategy: ntcip_strategy(q.approach),
+      #   time_of_service_desired: 0,
+      #   time_of_estimated_departure: 0,
+      #   intersection_id: comm.intersection_id
+      # },
       %NTCIP.PriorityRequestAbsolute{
         id: comm.next_id,
         vehicle_id: q.vehicle_id,
