@@ -55,7 +55,8 @@ defmodule Tablespoon.Transport.SSH do
                save_accepted_host: false,
                quiet_mode: false,
                connect_timeout: @connect_timeout,
-               keepalive: true
+               keepalive: true,
+               unexpectedfun: &__MODULE__.ssh_unexpectedfun/2
              ],
              @negotiation_timeout
            ),
@@ -194,5 +195,18 @@ defmodule Tablespoon.Transport.SSH do
       end
 
     %{ssh | keep_alive_ref: nil}
+  end
+
+  @doc """
+  Hook for SSH to configure logging of unexpected messages
+  """
+  def ssh_unexpectedfun(message, peer)
+
+  def ssh_unexpectedfun({:tcperror, _, :etimedout}, _peer) do
+    :skip
+  end
+
+  def ssh_unexpectedfun(_message, _peer) do
+    :report
   end
 end
