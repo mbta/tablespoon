@@ -6,6 +6,7 @@ defmodule Tablespoon.Intersection do
   require Logger
   alias __MODULE__.Config
   alias Tablespoon.{Communicator, Query}
+  alias Tablespoon.Intersection.Duplicates
 
   @retry_scale 500
   # how long to wait before trying to reconnect to an intersection at most: 1hr
@@ -20,11 +21,24 @@ defmodule Tablespoon.Intersection do
   @spec send_query(Query.t()) :: :ok
   def send_query(%Query{} = q) do
     name = name(q.intersection_alias)
+    pid = GenServer.whereis(name)
 
-    if GenServer.whereis(name) do
-      GenServer.cast(name, {:query, q})
-    else
-      _ =
+    cond do
+      Duplicates.seen?(q) ->
+        Logger.info(fn ->
+          event_time_iso =
+            q.event_time
+            |> DateTime.from_unix!(:native)
+            |> DateTime.truncate(:second)
+            |> DateTime.to_iso8601()
+
+          "duplicate Query received alias=#{q.intersection_alias} pid=#{inspect(self())} type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso}"
+        end)
+
+      is_pid(pid) ->
+        GenServer.cast(pid, {:query, q})
+
+      true ->
         Logger.warn(fn ->
           event_time_iso =
             q.event_time
@@ -35,7 +49,7 @@ defmodule Tablespoon.Intersection do
           "Query received for invalid Intersection alias=#{q.intersection_alias} pid=#{inspect(self())} type=#{q.type} q_id=#{q.id} v_id=#{q.vehicle_id} approach=#{q.approach} event_time=#{event_time_iso}"
         end)
 
-      :ok
+        :ok
     end
   end
 
