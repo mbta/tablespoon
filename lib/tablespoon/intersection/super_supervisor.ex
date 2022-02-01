@@ -11,6 +11,7 @@ defmodule Tablespoon.Intersection.SuperSupervisor do
   def init(configs) do
     Supervisor.init(
       [
+        Tablespoon.Intersection.Duplicates,
         {Registry, name: Tablespoon.Intersection.registry(), keys: :unique},
         {Tablespoon.Intersection.Supervisor, configs}
       ],
