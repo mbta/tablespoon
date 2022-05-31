@@ -30,7 +30,7 @@ defmodule Tablespoon.Protocol.ASN1 do
       {:ok, value, rest}
     else
       <<_::binary>> -> {:error, :wrong_length}
-      e -> e
+      {:error, _} = e -> e
     end
   end
 
@@ -113,6 +113,7 @@ defmodule Tablespoon.Protocol.ASN1 do
     end
   end
 
+  @spec decode_octet_string(binary) :: {:ok, binary(), binary()} | {:error, error}
   def decode_octet_string(<<0, rest::binary>>) do
     {:ok, "", rest}
   end
