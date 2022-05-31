@@ -1,6 +1,4 @@
-FROM hexpm/elixir:1.13.1-erlang-24.2-alpine-3.13.6 AS builder
-
-WORKDIR /root
+FROM hexpm/elixir:1.13.4-erlang-25.0-alpine-3.15.4 AS builder
 
 # Install Hex+Rebar
 RUN mix local.hex --force && \
@@ -13,18 +11,18 @@ ENV MIX_ENV=prod
 
 WORKDIR /root
 
-ADD mix.exs mix.exs
-ADD mix.lock mix.lock
-ADD config/config.exs config/prod.exs config/prod*.exs config/
+COPY mix.exs mix.exs
+COPY mix.lock mix.lock
+COPY config/config.exs config/prod.exs config/prod*.exs config/
 
 RUN mix do deps.get --only prod, deps.compile
 
-ADD . .
+COPY . .
 
 RUN mix do compile, release
 
 # Second stage: copies the files from the builder stage
-FROM alpine:3.13.6
+FROM alpine:3.15
 
 RUN apk add --update libstdc++ libgcc libssl1.1 ncurses-libs bash curl dumb-init \
     && rm -rf /var/cache/apk

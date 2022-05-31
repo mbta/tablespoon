@@ -17,7 +17,6 @@ defmodule Tablespoon.MixProject do
         plt_add_deps: :transitive,
         flags: [
           :error_handling,
-          :race_conditions,
           :unmatched_returns
         ]
       ]
