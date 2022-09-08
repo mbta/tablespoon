@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy Stunnel
 
 on:
   workflow_dispatch:
@@ -6,16 +6,16 @@ on:
 jobs:
   deploy:
     name: Deploy
-    uses: paulswartz/mbta-workflows/.github/workflows/deploy-on-prem.yml@static-tag
+    uses: mbta/workflows/.github/workflows/deploy-on-prem.yml@main
     with:
-      docker-tag: 5.65-windows-1809
+      docker-tag: 5.66-windows-1809
       app-name: stunnel
       environment: prod
       on-prem-cluster: hsctd-prod-managers
-      splunk-index: stunnel-prod
+      splunk-index: tablespoon-prod
       task-cpu: 0.25
       task-memory: 256M
-      task-port: 80 9005
+      task-port: 8080 9005
     secrets:
       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
