@@ -32,7 +32,6 @@ defmodule Tablespoon.Transport.SSH do
     :conn_ref,
     :channel_id,
     :keep_alive_ref,
-    :old_conn_ref,
     port: 22
   ]
 
@@ -63,7 +62,7 @@ defmodule Tablespoon.Transport.SSH do
          {:ok, channel_id} <- :ssh_connection.session_channel(conn_ref, @connect_timeout),
          :success <- :ssh_connection.ptty_alloc(conn_ref, channel_id, []),
          :ok <- :ssh_connection.shell(conn_ref, channel_id) do
-      ssh = %{ssh | conn_ref: conn_ref, channel_id: channel_id, old_conn_ref: ssh.conn_ref}
+      ssh = %{ssh | conn_ref: conn_ref, channel_id: channel_id}
       ssh = schedule_keep_alive(ssh)
       {:ok, ssh}
     else
@@ -155,12 +154,12 @@ defmodule Tablespoon.Transport.SSH do
     {:ok, ssh, []}
   end
 
-  def stream(%__MODULE__{old_conn_ref: old_conn_ref} = ssh, {:ssh_cm, old_conn_ref, _}) do
+  def stream(%__MODULE__{} = ssh, {:ssh_cm, _old_conn_ref, _}) do
     # message meant for the old connection; ignore
     {:ok, ssh, []}
   end
 
-  def stream(%__MODULE__{old_conn_ref: old_conn_ref} = ssh, {:ssh_keep_alive, old_conn_ref}) do
+  def stream(%__MODULE__{} = ssh, {:ssh_keep_alive, _old_conn_ref}) do
     # message meant for the old connection; ignore
     {:ok, ssh, []}
   end
