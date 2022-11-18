@@ -16,6 +16,7 @@ jobs:
       task-cpu: 0.25
       task-memory: 256M
       task-port: 8080 9005
+      task-replicas: 2
       update-order: start-first
     secrets:
       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
