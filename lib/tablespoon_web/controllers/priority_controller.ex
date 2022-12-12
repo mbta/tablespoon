@@ -24,6 +24,9 @@ defmodule TablespoonWeb.PriorityController do
   use TablespoonWeb, :controller
   alias Tablespoon.Intersection
 
+  # overrides Logster 1.1s default of using :error for 500s and :warn for 400s
+  plug Logster.Plugs.ChangeLogLevel, to: :info
+
   def index(conn, params) do
     case query_from_params(params) do
       {:ok, q} ->
