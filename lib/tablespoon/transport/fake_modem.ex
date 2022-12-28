@@ -79,10 +79,9 @@ defmodule Tablespoon.Transport.FakeModem do
   defp reply(t, data \\ "OK") do
     delay = Enum.random(t.delay_range)
 
-    _ =
-      for message <- [data, "\r", "\n"] do
-        send_after(self(), {t.ref, {:data, message}}, delay)
-      end
+    Enum.each([data, "\r", "\n"], fn message ->
+      send_after(self(), {t.ref, {:data, message}}, delay)
+    end)
 
     :ok
   end
