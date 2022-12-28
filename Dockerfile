@@ -1,4 +1,7 @@
-FROM hexpm/elixir:1.14.2-erlang-25.2-alpine-3.15.6 AS builder
+ARG ELIXIR_VERSION=1.14.2
+ARG ERLANG_VERSION=25.2
+ARG ALPINE_VERSION=3.17.0
+FROM hexpm/elixir:$ELIXIR_VERSION-erlang-$ERLANG_VERSION-alpine-$ALPINE_VERSION AS builder
 
 # Install Hex+Rebar
 RUN mix local.hex --force && \
@@ -22,7 +25,7 @@ COPY . .
 RUN mix do compile, release
 
 # Second stage: copies the files from the builder stage
-FROM alpine:3.15
+FROM alpine:$ALPINE_VERSION
 
 RUN apk add --update libstdc++ libgcc libssl1.1 ncurses-libs bash curl dumb-init \
     && rm -rf /var/cache/apk
