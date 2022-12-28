@@ -321,7 +321,7 @@ defmodule Tablespoon.Communicator.Modem do
     {:ok, comm, []}
   end
 
-  defp handle_line(%{connection_state: :connected} = comm, "Unable to create ACMIMsgQ") do
+  defp handle_line(comm, "Unable to create ACMIMsgQ") do
     # we get these messges from modems periodically, but they don't otherwise appear to cause any problems.
     Logger.debug("#{__MODULE__} modem Unable to create ACMIMsgQ, ignoring comm=#{inspect(comm)}")
     {:ok, comm, []}
