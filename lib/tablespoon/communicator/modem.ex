@@ -415,11 +415,10 @@ defmodule Tablespoon.Communicator.Modem do
     _ = if comm.keep_alive_ref, do: Process.cancel_timer(comm.keep_alive_ref)
 
     # cancel any open vehicle timers
-    _ =
-      for q <- Map.values(comm.open_vehicles),
-          ref <- :queue.to_list(q) do
-        _ = Process.cancel_timer(ref)
-      end
+    comm.open_vehicles
+    |> Map.values()
+    |> Enum.flat_map(&:queue.to_list/1)
+    |> Enum.each(&Process.cancel_timer/1)
 
     transport = Transport.close(comm.transport)
 

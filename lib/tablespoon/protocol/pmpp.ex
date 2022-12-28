@@ -24,7 +24,7 @@ defmodule Tablespoon.Protocol.PMPP do
   @enforce_keys [:address, :control, :body]
   defstruct @enforce_keys ++ [protocol: :snmp]
 
-  use Bitwise
+  import Bitwise
 
   @type t :: %__MODULE__{
           address: 0..255,
