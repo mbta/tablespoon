@@ -30,22 +30,13 @@ defmodule Tablespoon.Communicator.BtdTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
           approach: :south,
           event_time: System.system_time()
         )
-
-      comm =
-        Btd.new(
-          FakeTransport.new(),
-          group: @group,
-          intersection_id: @intersection_id
-        )
-
-      {:ok, comm, []} = Btd.connect(comm)
-      {:ok, comm, []} = Btd.send(comm, query)
 
       ntcip_message = %NTCIP.PriorityRequest{
         id: 1,
@@ -58,41 +49,48 @@ defmodule Tablespoon.Communicator.BtdTest do
         intersection_id: @intersection_id
       }
 
-      ntcip =
-        NTCIP.encode(%NTCIP{
-          group: @group,
-          pdu_type: :response,
-          request_id: 0,
-          message: ntcip_message
-        })
-
-      {:ok, comm, [sent: ^query]} = Btd.stream(comm, ntcip)
-      [sent_packet] = comm.transport.sent
-
-      assert {:ok, %NTCIP{group: @group, pdu_type: :set, message: ^ntcip_message}} =
-               NTCIP.decode(sent_packet)
+      assert_sent_query_and_got_message(query, ntcip_message)
     end
 
-    test "sends a NTCIP1211 cancel query and receives an ack" do
+    test "can override the vehicle class based on the source" do
       query =
         Query.new(
           id: 1,
-          type: :cancel,
+          source: :testing,
+          type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
           approach: :south,
           event_time: System.system_time()
         )
 
-      comm =
-        Btd.new(
-          FakeTransport.new(),
-          group: @group,
-          intersection_id: @intersection_id
-        )
+      ntcip_message = %NTCIP.PriorityRequest{
+        id: 1,
+        vehicle_id: "1",
+        vehicle_class: 1,
+        vehicle_class_level: 0,
+        strategy: 3,
+        time_of_service_desired: 0,
+        time_of_estimated_departure: 0,
+        intersection_id: @intersection_id
+      }
 
-      {:ok, comm, []} = Btd.connect(comm)
-      {:ok, comm, []} = Btd.send(comm, query)
+      assert_sent_query_and_got_message(query, ntcip_message,
+        source_to_vehicle_class: %{testing: 1}
+      )
+    end
+
+    test "sends a NTCIP1211 cancel query and receives an ack" do
+      query =
+        Query.new(
+          id: 1,
+          source: :testing,
+          type: :cancel,
+          vehicle_id: "1",
+          intersection_alias: "int",
+          approach: :south,
+          event_time: System.system_time()
+        )
 
       ntcip_message = %NTCIP.PriorityCancel{
         id: 1,
@@ -102,6 +100,24 @@ defmodule Tablespoon.Communicator.BtdTest do
         strategy: 3,
         intersection_id: @intersection_id
       }
+
+      assert_sent_query_and_got_message(query, ntcip_message)
+    end
+
+    defp assert_sent_query_and_got_message(query, ntcip_message, opts \\ []) do
+      opts =
+        opts
+        |> Keyword.put_new(:group, @group)
+        |> Keyword.put_new(:intersection_id, @intersection_id)
+
+      comm =
+        Btd.new(
+          FakeTransport.new(),
+          opts
+        )
+
+      {:ok, comm, []} = Btd.connect(comm)
+      {:ok, comm, []} = Btd.send(comm, query)
 
       ntcip =
         NTCIP.encode(%NTCIP{
@@ -290,6 +306,7 @@ defmodule Tablespoon.Communicator.BtdTest do
         ) do
       Query.new(
         id: 1,
+        source: :testing,
         type: type,
         vehicle_id: "1",
         intersection_alias: "int",

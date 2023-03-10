@@ -13,6 +13,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -32,6 +33,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -61,6 +63,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -92,6 +95,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       request =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -102,6 +106,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       cancel =
         Query.new(
           id: 1,
+          source: :testing,
           type: :cancel,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -126,6 +131,7 @@ defmodule Tablespoon.Communicator.ModemTest do
             vehicle_id <- vehicle_ids do
           Query.new(
             id: :erlang.unique_integer([:monotonic]),
+            source: :testing,
             type: type,
             vehicle_id: vehicle_id,
             intersection_alias: "int",
@@ -152,6 +158,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: :erlang.unique_integer([:monotonic]),
+          source: :testing,
           type: :cancel,
           vehicle_id: "1234",
           intersection_alias: "int",
@@ -173,6 +180,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: :erlang.unique_integer([:monotonic]),
+          source: :testing,
           type: :request,
           vehicle_id: "1234",
           intersection_alias: "int",
@@ -196,6 +204,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -225,6 +234,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :cancel,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -247,6 +257,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -271,6 +282,7 @@ defmodule Tablespoon.Communicator.ModemTest do
       query =
         Query.new(
           id: 1,
+          source: :testing,
           type: :request,
           vehicle_id: "1",
           intersection_alias: "int",
@@ -414,6 +426,7 @@ defmodule Tablespoon.Communicator.ModemTest do
         ) do
       Query.new(
         id: 1,
+        source: :testing,
         type: type,
         vehicle_id: "1",
         intersection_alias: "int",

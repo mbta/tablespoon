@@ -4,6 +4,7 @@ defmodule Tablespoon.Query do
   """
   @enforce_keys [
     :id,
+    :source,
     :type,
     :vehicle_id,
     :intersection_alias,
@@ -15,6 +16,7 @@ defmodule Tablespoon.Query do
 
   @type t :: %__MODULE__{
           id: id,
+          source: atom,
           type: query_type,
           vehicle_id: vehicle_id,
           vehicle_latitude: float | nil,

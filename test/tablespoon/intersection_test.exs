@@ -31,6 +31,7 @@ defmodule Tablespoon.IntersectionTest do
       query =
         Query.new(
           id: "test_query_id",
+          source: :testing,
           type: :cancel,
           intersection_alias: @alias,
           approach: :south,
@@ -60,6 +61,7 @@ defmodule Tablespoon.IntersectionTest do
       query =
         Query.new(
           id: "test_response_id",
+          source: :testing,
           type: :request,
           intersection_alias: @alias,
           approach: :north,
@@ -91,6 +93,7 @@ defmodule Tablespoon.IntersectionTest do
       query =
         Query.new(
           id: "test_invalid_alias",
+          source: :testing,
           type: :request,
           intersection_alias: @alias <> "_invalid",
           approach: :north,
@@ -169,6 +172,7 @@ defmodule Tablespoon.IntersectionTest do
       query =
         Query.new(
           id: "test_response_id",
+          source: :testing,
           type: :request,
           intersection_alias: @alias,
           approach: :north,
@@ -285,6 +289,7 @@ defmodule Tablespoon.IntersectionTest do
       query =
         Query.new(
           id: "test_failure_id",
+          source: :testing,
           type: :request,
           intersection_alias: @alias,
           approach: :north,
@@ -331,6 +336,7 @@ defmodule Tablespoon.IntersectionTest do
         for id <- 1..3 do
           Query.new(
             id: id,
+            source: :testing,
             type: :request,
             intersection_alias: intersection_alias,
             approach: :north,
