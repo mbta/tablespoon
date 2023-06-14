@@ -8,7 +8,7 @@ defmodule TablespoonWeb.Endpoint do
   end
 
   plug Plug.RequestId
-  plug Logster.Plugs.Logger
+  plug Logster.Plugs.Logger, log: :info
 
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],

@@ -5,17 +5,12 @@ defmodule TablespoonWeb.ErrorsTest do
   describe "404" do
     @tag :capture_log
     test "renders an HTML page", %{conn: conn} do
-      response =
-        assert_error_sent 404, fn ->
-          conn
-          |> put_req_header("accept", "text/html")
-          |> get("/not-found")
-        end
+      conn =
+        conn
+        |> put_req_header("accept", "text/html")
+        |> get("/not-found")
 
-      {code, _headers, body} = response
-
-      assert code == 404
-      assert body =~ "Not Found"
+      assert html_response(conn, 404) =~ "Not Found"
     end
   end
 end
