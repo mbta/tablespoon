@@ -1,17 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 set -e
-ASDF_SCRIPT=$HOME/.asdf/asdf.sh
-if [ -f $ASDF_SCRIPT ]; then
-    source $ASDF_SCRIPT
-else
-    true
+MIX=mix
+if (which rtx > /dev/null); then
+    MIX="$(rtx which mix)"
+elif [ -f "$HOME"/.asdf/asdf.sh ]; then
+    MIX="$HOME/.asdf/bin/mix"
 fi
-if mix format --check-formatted; then
+
+if "$MIX" format --check-formatted; then
     true
 else
-    mix format --check-equivalent
+    "$MIX" format --check-equivalent
     false
 fi
-mix credo --strict --format oneline
-env MIX_ENV=test mix do compile --force --warnings-as-errors, test --no-color
-mix dialyzer --format dialyxir
+"$MIX" credo --strict --format oneline
+env MIX_ENV=test "$MIX" do compile --force --warnings-as-errors, test --no-color
+"$MIX" dialyzer --format dialyxir
