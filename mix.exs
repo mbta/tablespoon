@@ -5,7 +5,7 @@ defmodule Tablespoon.MixProject do
     [
       app: :tablespoon,
       version: "0.1.0",
-      elixir: "~> 1.6",
+      elixir: "~> 1.15-pre",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,

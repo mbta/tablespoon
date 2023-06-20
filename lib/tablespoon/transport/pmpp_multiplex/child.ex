@@ -92,7 +92,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
 
       :unknown ->
         _ =
-          Logger.warn(fn ->
+          Logger.warning(fn ->
             "unexpected PMPPMultiplex.Child message pid=#{inspect(self())} message=#{inspect(message)}"
           end)
 
@@ -173,7 +173,7 @@ defmodule Tablespoon.Transport.PMPPMultiplex.Child do
     else
       error ->
         _ =
-          Logger.warn(fn ->
+          Logger.warning(fn ->
             "unable to match incoming PMPP message pmpp=#{inspect(pmpp, limit: :infinity)} in_flight=#{inspect(state.in_flight)} error=#{inspect(error)}"
           end)
 

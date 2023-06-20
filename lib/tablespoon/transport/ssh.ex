@@ -129,7 +129,7 @@ defmodule Tablespoon.Transport.SSH do
   def stream(%__MODULE__{conn_ref: conn_ref} = ssh, {:ssh_cm, conn_ref, message}) do
     # This is a message meant for us, but that we don't know how to process
     _ =
-      Logger.warn(fn ->
+      Logger.warning(fn ->
         "#{__MODULE__} unexpected message ssh=#{inspect(ssh)} message=#{inspect(message)}"
       end)
 
@@ -144,7 +144,7 @@ defmodule Tablespoon.Transport.SSH do
     :ok =
       :ssh_connection_handler.global_request(
         conn_ref,
-        'keep-alive@mbta.com',
+        ~c"keep-alive@mbta.com",
         false,
         [],
         @connect_timeout

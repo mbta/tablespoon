@@ -8,7 +8,7 @@ defmodule TablespoonTcp.ListenerTest do
       port_number = random_port_number()
       opts = [server: true, port: port_number]
       assert {:ok, _pid} = start_link(opts)
-      assert {:ok, port} = :gen_tcp.connect('127.0.0.1', port_number, active: false)
+      assert {:ok, port} = :gen_tcp.connect(~c"127.0.0.1", port_number, active: false)
       assert :ok = :gen_tcp.send(port, "T")
       # not {:error, :closed}
       assert {:error, :timeout} = :gen_tcp.recv(port, 0, 100)

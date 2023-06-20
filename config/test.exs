@@ -12,8 +12,10 @@ config :tablespoon, TablespoonTcp.Listener,
     1 => {"99999999", :north}
   }
 
-# Print only warnings and errors during test
-config :logger, level: :warn
+# Print only warnings and errors during test, but always evaluate the arguments
+config :logger,
+  level: :warning,
+  always_evaluate_messages: true
 
 # don't load intersection configuration
 config :tablespoon,
