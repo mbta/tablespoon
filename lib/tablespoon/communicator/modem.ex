@@ -345,7 +345,7 @@ defmodule Tablespoon.Communicator.Modem do
 
         :empty ->
           _ =
-            Logger.warn(
+            Logger.warning(
               "#{__MODULE__} unexpected response with empty queue comm=#{inspect(comm)} line=#{inspect(line)}"
             )
 

@@ -89,7 +89,7 @@ defmodule Tablespoon.Transport.TCP do
 
   def stream(%__MODULE__{socket: socket} = tcp, {:tcp_error, socket, error}) do
     _ =
-      Logger.warn(
+      Logger.warning(
         "#{__MODULE__} unexpected error uri=#{tcp.host}:#{tcp.port} socket=#{inspect(socket)} error=#{inspect(error)}"
       )
 

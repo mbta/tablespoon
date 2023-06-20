@@ -175,7 +175,7 @@ defmodule Tablespoon.Communicator.Btd do
 
       {:error, e} ->
         _ =
-          Logger.warn(fn ->
+          Logger.warning(fn ->
             "unexpected error decoding NTCIP comm=#{inspect(comm)} error=#{inspect(e)} body=#{inspect(binary, limit: :infinity)}"
           end)
 
@@ -217,7 +217,7 @@ defmodule Tablespoon.Communicator.Btd do
 
   defp handle_ntcip(comm, ntcip, events) do
     _ =
-      Logger.warn(fn ->
+      Logger.warning(fn ->
         "unexpected NTCIP1211 message comm=#{inspect(comm)} message=#{inspect(ntcip)}"
       end)
 

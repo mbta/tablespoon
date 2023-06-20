@@ -9,7 +9,7 @@ config :logger, level: :info
 
 config :logger, :console,
   format: "[$level] $metadata$message\n",
-  level: :warn
+  level: :warning
 
 config :logger, :splunk,
   host: {:system, "SPLUNK_HOST"},

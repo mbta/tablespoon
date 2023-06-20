@@ -119,7 +119,7 @@ defmodule TablespoonTcp.Handler do
 
       :error ->
         _ =
-          Logger.warn(fn ->
+          Logger.warning(fn ->
             "#{__MODULE__} invalid Transitmaster event ID event_id=#{event_id}"
           end)
 

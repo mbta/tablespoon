@@ -65,7 +65,7 @@ defmodule TablespoonTcp.HandlerTest do
 
   describe "handle_info/2" do
     test "handles a whole packet of data", %{port: port} do
-      {:ok, socket} = :gen_tcp.connect('localhost', port, [])
+      {:ok, socket} = :gen_tcp.connect(~c"localhost", port, [])
       :ok = :gen_tcp.send(socket, @data)
       assert_receive {:query, %Query{intersection_alias: "99999999", approach: :north}}
 
@@ -74,7 +74,7 @@ defmodule TablespoonTcp.HandlerTest do
     end
 
     test "handles slowly receiving a packet of data", %{port: port} do
-      {:ok, socket} = :gen_tcp.connect('localhost', port, [])
+      {:ok, socket} = :gen_tcp.connect(~c"localhost", port, [])
 
       for byte <- String.split(@data, "") do
         refute_received {:query, _}
@@ -85,14 +85,14 @@ defmodule TablespoonTcp.HandlerTest do
     end
 
     test "closes the connection if the packet is not valid", %{port: port} do
-      {:ok, socket} = :gen_tcp.connect('localhost', port, nodelay: true)
+      {:ok, socket} = :gen_tcp.connect(~c"localhost", port, nodelay: true)
 
       :ok = :gen_tcp.send(socket, "INVALID PACKET")
       assert_receive {:tcp_closed, ^socket}
     end
 
     test "logs a message if the packet has an XML error", %{port: port} do
-      {:ok, socket} = :gen_tcp.connect('localhost', port, nodelay: true)
+      {:ok, socket} = :gen_tcp.connect(~c"localhost", port, nodelay: true)
 
       log =
         capture_log([level: :error], fn ->

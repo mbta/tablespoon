@@ -39,7 +39,7 @@ defmodule Tablespoon.Intersection do
         GenServer.cast(pid, {:query, q})
 
       true ->
-        Logger.warn(fn ->
+        Logger.warning(fn ->
           event_time_iso =
             q.event_time
             |> DateTime.from_unix!(:native)
@@ -96,7 +96,7 @@ defmodule Tablespoon.Intersection do
            fuse_name: atom,
            connected?: boolean,
            connect_failure_count: non_neg_integer,
-           time_fn: (() -> :calendar.time())
+           time_fn: (-> :calendar.time())
          }
 
   @impl GenServer
@@ -169,7 +169,7 @@ defmodule Tablespoon.Intersection do
           state = %{state | connect_failure_count: state.connect_failure_count + 1}
 
           _ =
-            Logger.warn(fn ->
+            Logger.warning(fn ->
               "unable to start Intersection alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} count=#{state.connect_failure_count} error=#{inspect(e)}"
             end)
 
@@ -190,7 +190,7 @@ defmodule Tablespoon.Intersection do
 
     _ =
       if time >= config.warning_not_before_time and time <= config.warning_not_after_time do
-        Logger.warn(fn ->
+        Logger.warning(fn ->
           "Intersection has not received a message in #{config.warning_timeout_ms}ms - alias=#{config.alias} pid=#{inspect(self())}"
         end)
       end
@@ -213,7 +213,7 @@ defmodule Tablespoon.Intersection do
 
       :unknown ->
         _ =
-          Logger.warn(fn ->
+          Logger.warning(fn ->
             "unexpected message alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} message=#{inspect(message)}"
           end)
 
@@ -281,7 +281,7 @@ defmodule Tablespoon.Intersection do
     state = %{state | connected?: false, connect_failure_count: state.connect_failure_count + 1}
 
     _ =
-      Logger.warn(fn ->
+      Logger.warning(fn ->
         "Lost connection - alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} count=#{state.connect_failure_count} error=#{inspect(error)}"
       end)
 
