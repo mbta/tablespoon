@@ -9,6 +9,7 @@ import Config
 
 # Configures the endpoint
 config :tablespoon, TablespoonWeb.Endpoint,
+  adapter: Bandit.PhoenixAdapter,
   http: [port: 4000],
   url: [host: "localhost", port: 4000],
   secret_key_base: "g+uRKkw3yrnh15jhEantHUsmWWUnzwdFRHSX2K+a+5I7rilZeyk7Ptv9kUBwqKAE",
