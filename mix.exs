@@ -14,7 +14,7 @@ defmodule Tablespoon.MixProject do
         tool: LcovEx
       ],
       dialyzer: [
-        plt_add_deps: :transitive,
+        plt_add_deps: :app_tree,
         flags: [
           :error_handling,
           :missing_return,
