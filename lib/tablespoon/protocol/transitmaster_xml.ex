@@ -31,6 +31,10 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
 
   @header "TMTSPDATAHEADER"
 
+  @doc "The header for each TransitMaster TSP message."
+  @spec header :: binary
+  def header, do: @header
+
   @spec encode(t) :: iodata
   def encode(%__MODULE__{} = tm) do
     tag =

@@ -10,7 +10,20 @@ config :tablespoon, TablespoonWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
-  watchers: []
+  watchers: [],
+  http: [
+    thousand_island_options: [
+      handler_options: %{
+        plug: {Phoenix.Endpoint.SyncCodeReloadPlug, {TablespoonWeb.Endpoint, []}},
+        handler_module: TablespoonWeb.InitialHandler,
+        opts: %{
+          http_1: [],
+          http_2: [],
+          websocket: []
+        }
+      }
+    ]
+  ]
 
 # ## SSL Support
 #

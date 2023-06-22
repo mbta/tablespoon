@@ -10,7 +10,20 @@ import Config
 # Configures the endpoint
 config :tablespoon, TablespoonWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
-  http: [port: 4000],
+  http: [
+    port: 4000,
+    thousand_island_options: [
+      handler_options: %{
+        plug: TablespoonWeb.Endpoint,
+        handler_module: TablespoonWeb.InitialHandler,
+        opts: %{
+          http_1: [],
+          http_2: [],
+          websocket: []
+        }
+      }
+    ]
+  ],
   url: [host: "localhost", port: 4000],
   secret_key_base: "g+uRKkw3yrnh15jhEantHUsmWWUnzwdFRHSX2K+a+5I7rilZeyk7Ptv9kUBwqKAE",
   render_errors: [view: TablespoonWeb.ErrorView, accepts: ~w(json html)]
