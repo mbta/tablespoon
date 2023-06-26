@@ -56,7 +56,6 @@ defmodule Tablespoon.MixProject do
       {:logster, "~> 1.0"},
       {:ehmon, github: "mbta/ehmon", branch: "master", only: [:prod]},
       {:fuse, "~> 2.5.0"},
-      {:ranch, "~> 1.7.1"},
       {:tzdata, "~> 1.1"}
     ]
   end

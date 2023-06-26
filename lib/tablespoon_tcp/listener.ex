@@ -32,7 +32,6 @@ defmodule TablespoonTcp.Listener do
   def children(opts) do
     if opts[:server] do
       [
-        # ranch_sup is already started by Cowboy
         listener(opts)
       ]
     else
@@ -41,13 +40,7 @@ defmodule TablespoonTcp.Listener do
   end
 
   defp listener(opts) do
-    :ranch.child_spec(
-      __MODULE__,
-      100,
-      :ranch_tcp,
-      [port: opts[:port]],
-      TablespoonTcp.Protocol,
-      []
-    )
+    {ThousandIsland,
+     port: opts[:port], handler_module: TablespoonTcp.Handler, handler_options: %{}}
   end
 end
