@@ -14,7 +14,7 @@ config :tablespoon, TablespoonWeb.Endpoint,
     port: 4000,
     thousand_island_options: [
       handler_options: %{
-        plug: TablespoonWeb.Endpoint,
+        plug: {TablespoonWeb.Endpoint, []},
         handler_module: TablespoonWeb.InitialHandler,
         opts: %{
           http_1: [],
