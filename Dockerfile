@@ -27,7 +27,9 @@ RUN mix do compile, release
 # Second stage: copies the files from the builder stage
 FROM alpine:$ALPINE_VERSION
 
-RUN apk add --update libstdc++ libgcc libssl1.1 ncurses-libs bash curl dumb-init \
+RUN apk update \
+    && apk upgrade \
+    && apk add --no-cache libstdc++ libgcc libssl1.1 ncurses-libs bash curl dumb-init \
     && rm -rf /var/cache/apk
 
 # Create non-root user
