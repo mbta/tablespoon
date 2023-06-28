@@ -1,6 +1,10 @@
 name: Elixir CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 5 * * 1'
 
 jobs:
   asdf:
@@ -66,3 +70,15 @@ jobs:
           name: elixir-lcov
           path: cover/
       - uses: mbta/actions/dialyzer@v1
+
+  trivy:
+    name: Trivy vulnerability scanner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Trivy vulnerability scanner in fs mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          trivy-config: trivy.yml
