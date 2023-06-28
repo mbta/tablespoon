@@ -1,0 +1,19 @@
+---
+format: 'table'
+exit-code: '1'
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+scan:
+  scanners:
+    - vuln
+    - secret
+    - config
+db:
+  no-progress: true
+vulnerability:
+  type:
+    - os
+    - library
+  ignore-unfixed: true

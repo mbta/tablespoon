@@ -1,11 +1,19 @@
 name: Docker
 
-on: [push]
+on:
+  push:
+  schedule:
+    - cron: '0 5 * * 1'
 
 jobs:
   docker:
     name: Build Docker image
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - run: docker build .
+      - uses: actions/checkout@v3
+      - run: docker build -t tablespoon .
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: tablespoon
+          trivy-config: trivy.yml
