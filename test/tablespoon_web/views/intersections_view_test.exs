@@ -31,11 +31,4 @@ defmodule TablespoonWeb.IntersectionsViewTest do
       assert IO.iodata_to_binary(friendly_time({24, 0, 0})) == "24:00"
     end
   end
-
-  defp non_negative_integer do
-    one_of([
-      positive_integer(),
-      constant(0)
-    ])
-  end
 end
