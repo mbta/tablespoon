@@ -50,7 +50,7 @@ defmodule Tablespoon.MixProject do
       {:jason, "~> 1.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
-      {:stream_data, "~> 0.5.0", only: [:test]},
+      {:stream_data, "~> 0.6.0", only: [:test]},
       {:dialyxir, "~> 1.3.0", only: [:dev, :test], runtime: false},
       {:logger_splunk_backend, "~> 2.0", only: [:prod]},
       {:logster, "~> 1.0"},
