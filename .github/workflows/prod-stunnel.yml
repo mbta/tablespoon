@@ -20,7 +20,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           ecs-cluster: ${{ env.ECS_CLUSTER }}
           ecs-service: ${{ env.ECS_SERVICE }}
-          docker-tag: ghcr.io/mbta/stunnel:5.70-r0-alpine-3.18.3
+          docker-tag: ghcr.io/mbta/stunnel:5.71-r0-alpine-3.18.3
           launch-type: EXTERNAL
       - uses: mbta/actions/notify-slack-deploy@v1
         if: ${{ !cancelled() }}
