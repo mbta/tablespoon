@@ -6,21 +6,24 @@ on:
 jobs:
   deploy:
     name: Deploy
-    uses: mbta/workflows/.github/workflows/deploy-on-prem.yml@main
-    with:
-      docker-tag: 5.69-windows-1809
-      app-name: stunnel
-      environment: prod
-      on-prem-cluster: hsctd-prod-managers
-      splunk-index: tablespoon-prod
-      task-cpu: 0.25
-      task-memory: 256M
-      task-port: 8080 9005
-      update-order: stop-first
-      port-mode: host
-      placement-constraint: "node.hostname == HSCTDPRD"      
-    secrets:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      slack-webhook: ${{ secrets.SLACK_WEBHOOK }}
-      docker-repo: mbtatools/windows-stunnel
+    runs-on: ubuntu-latest
+    concurrency: prod-linux
+    env:
+      ECS_CLUSTER: linux-prod
+      ECS_SERVICE: stunnel-prod
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mbta/actions/deploy-ecs@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ecs-cluster: ${{ env.ECS_CLUSTER }}
+          ecs-service: ${{ env.ECS_SERVICE }}
+          docker-tag: ghcr.io/mbta/stunnel:5.70-r0-alpine-3.18.3
+          launch-type: EXTERNAL
+      - uses: mbta/actions/notify-slack-deploy@v1
+        if: ${{ !cancelled() }}
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          job-status: ${{ job.status }}
