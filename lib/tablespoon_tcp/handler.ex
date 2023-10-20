@@ -75,7 +75,7 @@ defmodule TablespoonTcp.Handler do
   end
 
   defp handle_decoded_buffer({:error, error, _buffer}, queries, state) do
-    peername = ThousandIsland.Socket.peer_info(state.socket).address
+    {:ok, {peername, _}} = ThousandIsland.Socket.peername(state.socket)
 
     _ =
       Logger.error(fn ->

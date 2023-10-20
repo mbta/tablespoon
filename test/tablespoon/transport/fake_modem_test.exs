@@ -49,9 +49,10 @@ defmodule Tablespoon.Transport.FakeModemTest do
 
     test "when delay_range is sent, waits to send the reply" do
       t = FakeModem.new(delay_range: 5..10)
+      ref = t.ref
       {:ok, t} = FakeModem.connect(t)
       assert {:ok, t} = FakeModem.send(t, @packet)
-      refute_received _
+      refute_received {^ref, _}
       # wait...
       receive_echo(t)
       assert_receive x

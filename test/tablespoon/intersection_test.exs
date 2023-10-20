@@ -14,12 +14,14 @@ defmodule Tablespoon.IntersectionTest do
     warning_timeout_ms: 60_000,
     warning_not_before_time: {7, 0, 0},
     warning_not_after_time: {23, 0, 0},
-    communicator: Modem.new(FakeModem.new())
+    communicator: Modem.new(FakeModem.new()),
+    log_termination?: false
   }
 
   doctest Intersection
 
   setup do
+    start_supervised!(Tablespoon.Intersection.Duplicates)
     {:ok, _pid} = Intersection.start_link(config: @config)
     :ok
   end
@@ -27,6 +29,7 @@ defmodule Tablespoon.IntersectionTest do
   describe "send_query/1" do
     setup :log_level_info
 
+    @tag capture_log: false
     test "logs the query" do
       query =
         Query.new(
@@ -56,6 +59,7 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "test_query_id"
     end
 
+    @tag capture_log: false
     test "logs the response" do
       query =
         Query.new(
@@ -87,6 +91,7 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "test_response_id"
     end
 
+    @tag capture_log: false
     test "logs a warning if there's an invalid alias" do
       query =
         Query.new(
@@ -106,22 +111,29 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "Query received for invalid Intersection alias=test_alias_invalid"
     end
 
+    @tag capture_log: false
     test "logs a message if the server is terminated before the response comes back" do
       config = %{
         @config
         | alias: "test_supervisor_stop",
-          communicator: Modem.new(FakeModem.new(delay_range: 10_000..10_000))
+          communicator: Modem.new(FakeModem.new(delay_range: 10_000..10_000)),
+          log_termination?: true
       }
 
       # run under a supervisor to ensure we're trapping exits. If we call
       # GenServer.stop/1 directly, the terminate/2 callback is always called.
-      {:ok, supervisor_pid} =
-        Supervisor.start_link(
-          [
-            {Intersection, config: config}
-          ],
-          strategy: :one_for_one
-        )
+      {supervisor_pid, _} =
+        with_log(fn ->
+          {:ok, supervisor_pid} =
+            Supervisor.start_link(
+              [
+                {Intersection, config: config}
+              ],
+              strategy: :one_for_one
+            )
+
+          supervisor_pid
+        end)
 
       query =
         Query.new(
@@ -135,10 +147,9 @@ defmodule Tablespoon.IntersectionTest do
           event_time: 0
         )
 
-      :ok = Intersection.send_query(query)
-
       log =
         capture_log(fn ->
+          :ok = Intersection.send_query(query)
           :ok = Supervisor.stop(supervisor_pid)
         end)
 
@@ -150,6 +161,7 @@ defmodule Tablespoon.IntersectionTest do
   describe "handle_continue(:connect)" do
     setup :log_level_info
 
+    @tag capture_log: false
     test "if we fail to connect, will fail future requests" do
       config = %{
         @config
@@ -186,6 +198,7 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "error=:not_connected"
     end
 
+    @tag capture_log: false
     test "if we fail to connect multiple times, do not immediately reconnect" do
       config = %{
         @config
@@ -203,7 +216,6 @@ defmodule Tablespoon.IntersectionTest do
       end)
     end
 
-    @tag :capture_log
     test "if we're already connected, do not reconnect" do
       {:ok, state, {:continue, :connect}} = Intersection.init(config: @config)
       assert {:noreply, state, timeout} = Intersection.handle_continue(:connect, state)
@@ -221,6 +233,7 @@ defmodule Tablespoon.IntersectionTest do
       {:ok, state: state}
     end
 
+    @tag capture_log: false
     test "logs a warning during the timeframe", %{state: state} do
       state = %{state | time_fn: fn -> {12, 0, 0} end}
 
@@ -233,6 +246,7 @@ defmodule Tablespoon.IntersectionTest do
       assert log =~ "not received"
     end
 
+    @tag capture_log: false
     test "does not log a warning before the timeframe", %{state: state} do
       state = %{state | time_fn: fn -> {6, 0, 0} end}
 
@@ -244,6 +258,7 @@ defmodule Tablespoon.IntersectionTest do
       assert log == ""
     end
 
+    @tag capture_log: false
     test "does not log a warning after the timeframe", %{state: state} do
       state = %{state | time_fn: fn -> {23, 50, 0} end}
 
@@ -281,6 +296,7 @@ defmodule Tablespoon.IntersectionTest do
       {:ok, %{state: state}}
     end
 
+    @tag capture_log: false
     test "logs a failure response", %{state: state} do
       query =
         Query.new(
@@ -315,6 +331,7 @@ defmodule Tablespoon.IntersectionTest do
   describe "fuse" do
     setup :log_level_info
 
+    @tag capture_log: false
     test "a blown fuse results in a :blown_fuse error" do
       intersection_alias = "test_blown_fuse"
 
@@ -341,7 +358,7 @@ defmodule Tablespoon.IntersectionTest do
 
       log =
         capture_log(fn ->
-          {:ok, _pid} =
+          {:ok, pid} =
             Intersection.start_link(
               config: config,
               fuse_options: {{:standard, 1, 300_000}, {:reset, 300_000}}
@@ -352,6 +369,7 @@ defmodule Tablespoon.IntersectionTest do
           end
 
           :ok = Intersection.flush(intersection_alias)
+          GenServer.stop(pid)
         end)
 
       assert log =~ "error=:blown_fuse"

@@ -59,7 +59,7 @@ defmodule TablespoonTcp.HandlerTest do
         handler_options: handler_options
       )
 
-    {:ok, %{port: port}} = ThousandIsland.listener_info(pid)
+    {:ok, {_, port}} = ThousandIsland.listener_info(pid)
     {:ok, %{pid: pid, port: port}}
   end
 

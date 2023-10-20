@@ -16,6 +16,8 @@ config :tablespoon, TablespoonWeb.Endpoint,
       handler_options: %{
         plug: {TablespoonWeb.Endpoint, []},
         handler_module: TablespoonWeb.InitialHandler,
+        http_2_enabled: false,
+        websocket_enabled: false,
         opts: %{
           http_1: [],
           http_2: [],

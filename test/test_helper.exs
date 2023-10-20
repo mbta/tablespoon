@@ -10,4 +10,5 @@ opts =
     opts
   end
 
+Application.ensure_all_started(:fuse)
 ExUnit.start(opts)

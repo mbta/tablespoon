@@ -223,10 +223,12 @@ defmodule Tablespoon.Intersection do
 
   @impl GenServer
   def terminate(reason, %{config: config} = state) do
-    _ =
-      Logger.info(fn ->
-        "Terminating alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} reason=#{inspect(reason)}"
-      end)
+    if config.log_termination? do
+      _ =
+        Logger.info(fn ->
+          "Terminating alias=#{config.alias} comm=#{Communicator.name(config.communicator)} pid=#{inspect(self())} reason=#{inspect(reason)}"
+        end)
+    end
 
     {:ok, comm, results} = Communicator.close(config.communicator)
     config = %{config | communicator: comm}

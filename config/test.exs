@@ -4,7 +4,7 @@ import Config
 # you can enable the server option below.
 config :tablespoon, TablespoonWeb.Endpoint,
   http: [port: 4002],
-  server: false
+  server: true
 
 config :tablespoon, TablespoonTcp.Listener,
   server: false,

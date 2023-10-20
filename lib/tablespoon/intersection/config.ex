@@ -12,7 +12,8 @@ defmodule Tablespoon.Intersection.Config do
           active?: boolean,
           warning_timeout_ms: non_neg_integer | :infinity,
           warning_not_before_time: :calendar.time() | {24, 0, 0},
-          warning_not_after_time: :calendar.time()
+          warning_not_after_time: :calendar.time(),
+          log_termination?: boolean
         }
 
   @enforce_keys [:alias, :communicator]
@@ -22,7 +23,8 @@ defmodule Tablespoon.Intersection.Config do
                 active?: true,
                 warning_timeout_ms: :infinity,
                 warning_not_before_time: {24, 0, 0},
-                warning_not_after_time: {0, 0, 0}
+                warning_not_after_time: {0, 0, 0},
+                log_termination?: true
               ]
 
   @doc "Parse a JSON object into a Config"
