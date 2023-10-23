@@ -7,6 +7,9 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     concurrency: prod-linux
     env:
       ECS_CLUSTER: linux-prod
@@ -14,10 +17,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: mbta/actions/deploy-ecs@v1
+      - uses: mbta/actions/deploy-ecs@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           ecs-cluster: ${{ env.ECS_CLUSTER }}
           ecs-service: ${{ env.ECS_SERVICE }}
           docker-tag: ghcr.io/mbta/stunnel:5.71-r0-alpine-3.18.3
