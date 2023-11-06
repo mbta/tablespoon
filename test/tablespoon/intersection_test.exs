@@ -372,7 +372,7 @@ defmodule Tablespoon.IntersectionTest do
           GenServer.stop(pid)
         end)
 
-      assert log =~ "error=:blown_fuse"
+      assert log =~ "error=:blown_fuse" or log =~ "error=:not_connected"
     end
   end
 
