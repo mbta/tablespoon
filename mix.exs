@@ -52,7 +52,6 @@ defmodule Tablespoon.MixProject do
       {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
       {:stream_data, "~> 0.6.0", only: [:test]},
       {:dialyxir, "~> 1.4.0", only: [:dev, :test], runtime: false},
-      {:logger_splunk_backend, "~> 2.0", only: [:prod]},
       {:logster, "~> 1.0"},
       {:ehmon, github: "mbta/ehmon", branch: "master", only: [:prod]},
       {:fuse, "~> 2.5.0"},
