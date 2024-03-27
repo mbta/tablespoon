@@ -19,6 +19,7 @@ config :tablespoon, TablespoonWeb.Endpoint,
         http_2_enabled: false,
         websocket_enabled: false,
         opts: %{
+          http: [],
           http_1: [],
           http_2: [],
           websocket: []
