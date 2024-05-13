@@ -18,7 +18,7 @@ jobs:
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         docker-repo: ${{ secrets.DOCKER_REPO }}
-    - uses: mbta/actions/deploy-ecs@v2
+    - uses: mbta/actions/deploy-ecs@ps-deploy-fix-ec2
       with:
         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
         ecs-cluster: tablespoon
