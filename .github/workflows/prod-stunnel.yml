@@ -16,7 +16,7 @@ jobs:
       ECS_SERVICE: stunnel-prod
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: mbta/actions/deploy-ecs@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
