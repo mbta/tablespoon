@@ -41,7 +41,7 @@ jobs:
           path: ~/.asdf
           key: ${{ runner.os }}-asdf-v3-${{ hashFiles('.tool-versions') }}
         id: asdf-cache
-      - uses: mbta/actions/reshim-asdf@v1
+      - uses: mbta/actions/reshim-asdf@v2
       - name: Restore dependencies cache
         id: deps-cache
         uses: actions/cache@v4
@@ -69,7 +69,7 @@ jobs:
         with:
           name: elixir-lcov
           path: cover/
-      - uses: mbta/actions/dialyzer@v1
+      - uses: mbta/actions/dialyzer@v2
 
   trivy:
     name: Trivy vulnerability scanner
