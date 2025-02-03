@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 MIX=mix
-if (which rtx > /dev/null); then
+if (which mise > /dev/null); then
+    MIX="$(mise which mix)"
+elif (which rtx > /dev/null); then
     MIX="$(rtx which mix)"
 elif [ -f "$HOME"/.asdf/asdf.sh ]; then
     MIX="$HOME/.asdf/bin/mix"
