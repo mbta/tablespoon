@@ -24,7 +24,7 @@ jobs:
           ecs-service: ${{ env.ECS_SERVICE }}
           docker-tag: ghcr.io/mbta/stunnel:5.72-r0-alpine-3.19.1
           launch-type: EXTERNAL
-      - uses: mbta/actions/notify-slack-deploy@v1
+      - uses: mbta/actions/notify-slack-deploy@v2
         if: ${{ !cancelled() }}
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK }}
