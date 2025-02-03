@@ -12,7 +12,7 @@ jobs:
     environment: prod
     concurrency: prod
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: mbta/actions/build-push-ecr@v2
       id: build-push
       with:

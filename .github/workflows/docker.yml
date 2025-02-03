@@ -10,7 +10,7 @@ jobs:
     name: Build Docker image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: docker build -t tablespoon .
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
