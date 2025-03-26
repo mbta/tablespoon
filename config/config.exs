@@ -65,6 +65,8 @@ config :tablespoon,
 
 # connection configuration for the different types of Communicators
 config :tablespoon, Tablespoon.Communicator.Btd,
+  time_of_service_desired: 40,
+  time_of_estimated_departure: 40,
   transport: {Tablespoon.Transport.FakeBtd, []},
   group: "fake_group"
 
