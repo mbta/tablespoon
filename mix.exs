@@ -50,7 +50,7 @@ defmodule Tablespoon.MixProject do
       {:jason, "~> 1.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
-      {:stream_data, "~> 1.1.0", only: [:test]},
+      {:stream_data, "~> 1.2.0", only: [:test]},
       {:dialyxir, "~> 1.4.0", only: [:dev, :test], runtime: false},
       {:logster, "~> 1.0"},
       {:ehmon, github: "mbta/ehmon", branch: "master", only: [:prod]},
