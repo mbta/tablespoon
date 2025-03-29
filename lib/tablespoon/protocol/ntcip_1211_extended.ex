@@ -19,7 +19,10 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
           group: binary,
           pdu_type: :set | :response,
           request_id: integer,
-          message: __MODULE__.PriorityRequest.t() | __MODULE__.PriorityCancel.t()
+          message:
+            __MODULE__.PriorityRequest.t()
+            | __MODULE__.PriorityRequestAbsolute.t()
+            | __MODULE__.PriorityCancel.t()
         }
   @type error :: :invalid
 
@@ -92,6 +95,86 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
         strategy: strategy,
         time_of_service_desired: time_of_service_desired,
         time_of_estimated_departure: time_of_estimated_departure,
+        intersection_id: intersection_id
+      }
+    end
+  end
+
+  defmodule PriorityRequestAbsolute do
+    @moduledoc """
+    An OER encoded string of reference parameters to initiate a new priority
+    request based on an absolute time reference used by the PRG.
+
+    - priorityRequestID                         INTEGER (1..255)
+    - priorityRequestVehicleID                  OCTET STRING (SIZE 17)
+    - priorityRequestVehicleClassType           INTEGER (1..10)
+    - priorityRequestVehicleClassLevel          INTEGER (1..10)
+    - priorityRequestServiceStrategyNumber      INTEGER (1..255)
+    - priorityRequestTimeOfServiceDesired       INTEGER (1..65535)
+    - priorityRequestTimeOfEstimatedDeparture   INTEGER (1..65535)
+    - priorityRequestIntersectionID             INTEGER (1..65535)
+    - priorityRequestTimeOfRequest              INTEGER (0..4294967295)
+    """
+    @enforce_keys [
+      :id,
+      :vehicle_id,
+      :vehicle_class,
+      :vehicle_class_level,
+      :strategy,
+      :time_of_service_desired,
+      :time_of_estimated_departure,
+      :time_of_request,
+      :intersection_id
+    ]
+    defstruct @enforce_keys
+
+    # The spec says that vehicle_class_level, time_of_service_desired, and
+    # time_of_estimated_departure can't have 0 as a valid value, but that's
+    # what we sent to BTD.
+    @type t :: %__MODULE__{
+            id: 1..255,
+            vehicle_id: binary,
+            vehicle_class: 1..10,
+            vehicle_class_level: 0..10,
+            strategy: 1..255,
+            time_of_service_desired: 0..65_535,
+            time_of_estimated_departure: 0..65_535,
+            time_of_request: 0..4_294_967_295,
+            intersection_id: 1..65_535
+          }
+
+    def asn1_type, do: [1, 3, 6, 1, 4, 1, 1206, 4, 2, 11, 2, 8, 0]
+
+    def encode_for_varbind(%__MODULE__{} = message) do
+      vehicle_id = String.pad_leading(message.vehicle_id, 17, " ")
+
+      <<message.id::unsigned-integer-8, vehicle_id::binary-17,
+        message.vehicle_class::unsigned-integer-8,
+        message.vehicle_class_level::unsigned-integer-8, message.strategy::unsigned-integer-8,
+        message.time_of_service_desired::unsigned-integer-16,
+        message.time_of_estimated_departure::unsigned-integer-16,
+        message.time_of_request::unsigned-integer-32,
+        message.intersection_id::unsigned-integer-16>>
+    end
+
+    def decode_from_varbind(binary) do
+      <<id::unsigned-integer-8, vehicle_id::binary-17, vehicle_class::unsigned-integer-8,
+        vehicle_class_level::unsigned-integer-8, strategy::unsigned-integer-8,
+        time_of_service_desired::unsigned-integer-16,
+        time_of_estimated_departure::unsigned-integer-16, time_of_request::unsigned-integer-32,
+        intersection_id::unsigned-integer-16>> = binary
+
+      vehicle_id = String.trim_leading(vehicle_id, " ")
+
+      %__MODULE__{
+        id: id,
+        vehicle_id: vehicle_id,
+        vehicle_class: vehicle_class,
+        vehicle_class_level: vehicle_class_level,
+        strategy: strategy,
+        time_of_service_desired: time_of_service_desired,
+        time_of_estimated_departure: time_of_estimated_departure,
+        time_of_request: time_of_request,
         intersection_id: intersection_id
       }
     end
@@ -299,7 +382,11 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
      ]}
   end
 
-  for struct <- [__MODULE__.PriorityRequest, __MODULE__.PriorityCancel] do
+  for struct <- [
+        __MODULE__.PriorityRequest,
+        __MODULE__.PriorityRequestAbsolute,
+        __MODULE__.PriorityCancel
+      ] do
     defp asn1_type(%{__struct__: unquote(struct)}), do: unquote(struct.asn1_type())
     defp struct_from_asn1_type(unquote(struct.asn1_type())), do: {:ok, unquote(struct)}
   end
