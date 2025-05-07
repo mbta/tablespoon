@@ -108,39 +108,62 @@ defmodule Tablespoon.Communicator.Btd do
     # ensure the request ID is always one byte
     request_id = UniqueRangeCounter.unique_integer(:btd_request_id, -128, 127)
 
-    ntcip =
-      NTCIP.encode(%NTCIP{
-        group: comm.group,
-        pdu_type: :set,
-        request_id: request_id,
-        message: ntcip_message(comm, q)
-      })
+    q
+    |> ntcip_messages(comm)
+    |> Enum.reduce({:ok, comm.transport}, fn
+      message, {:ok, transport} ->
+        ntcip =
+          NTCIP.encode(%NTCIP{
+            group: comm.group,
+            pdu_type: :set,
+            request_id: request_id,
+            message: message
+          })
 
-    Transport.send(comm.transport, ntcip)
+        Transport.send(transport, ntcip)
+
+      _message, other ->
+        other
+    end)
   end
 
-  defp ntcip_message(comm, %{type: :request} = q) do
-    %NTCIP.PriorityRequest{
-      id: comm.next_id,
-      vehicle_id: q.vehicle_id,
-      vehicle_class: 2,
-      vehicle_class_level: 0,
-      strategy: ntcip_strategy(q.approach),
-      time_of_service_desired: 0,
-      time_of_estimated_departure: 0,
-      intersection_id: comm.intersection_id
-    }
+  defp ntcip_messages(%{type: :request} = q, comm) do
+    [
+      # %NTCIP.PriorityRequest{
+      #   id: comm.next_id,
+      #   vehicle_id: q.vehicle_id,
+      #   vehicle_class: 2,
+      #   vehicle_class_level: 0,
+      #   strategy: ntcip_strategy(q.approach),
+      #   time_of_service_desired: 0,
+      #   time_of_estimated_departure: 0,
+      #   intersection_id: comm.intersection_id
+      # },
+      %NTCIP.PriorityRequestAbsolute{
+        id: comm.next_id,
+        vehicle_id: q.vehicle_id,
+        vehicle_class: 2,
+        vehicle_class_level: 0,
+        strategy: ntcip_strategy(q.approach),
+        time_of_service_desired: 0,
+        time_of_estimated_departure: 0,
+        time_of_request: :erlang.convert_time_unit(q.event_time, :native, :second),
+        intersection_id: comm.intersection_id
+      }
+    ]
   end
 
-  defp ntcip_message(comm, %{type: :cancel} = q) do
-    %NTCIP.PriorityCancel{
-      id: comm.next_id,
-      vehicle_id: q.vehicle_id,
-      vehicle_class: 2,
-      vehicle_class_level: 0,
-      strategy: ntcip_strategy(q.approach),
-      intersection_id: comm.intersection_id
-    }
+  defp ntcip_messages(%{type: :cancel} = q, comm) do
+    [
+      %NTCIP.PriorityCancel{
+        id: comm.next_id,
+        vehicle_id: q.vehicle_id,
+        vehicle_class: 2,
+        vehicle_class_level: 0,
+        strategy: ntcip_strategy(q.approach),
+        intersection_id: comm.intersection_id
+      }
+    ]
   end
 
   defp ntcip_strategy(:north), do: 1
