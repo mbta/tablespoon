@@ -11,8 +11,8 @@ defmodule Tablespoon.Communicator.Btd do
   - vehicle_class: always 2
   - vehicle_class_level: always 0
   - strategy: 1 - North, 2 - East, 3 - South, 4 - West
-  - time_of_service_desired: always 0
-  - time_of_estimated_departure: always 0
+  - time_of_service_desired: configurable
+  - time_of_estimated_departure: configurable
   - intersection_id: passed-in
   """
   @behaviour Tablespoon.Communicator
@@ -23,7 +23,14 @@ defmodule Tablespoon.Communicator.Btd do
   require Logger
 
   @enforce_keys [:transport, :group, :intersection_id, :ref]
-  defstruct @enforce_keys ++ [timeout: 5_000, next_id: 1, in_flight: %{}]
+  defstruct @enforce_keys ++
+              [
+                timeout: 5_000,
+                next_id: 1,
+                in_flight: %{},
+                time_of_service_desired: 0,
+                time_of_estimated_departure: 0
+              ]
 
   @impl Tablespoon.Communicator
   def new(transport, opts) do
@@ -126,8 +133,8 @@ defmodule Tablespoon.Communicator.Btd do
       vehicle_class: 2,
       vehicle_class_level: 0,
       strategy: ntcip_strategy(q.approach),
-      time_of_service_desired: 0,
-      time_of_estimated_departure: 0,
+      time_of_service_desired: comm.time_of_service_desired,
+      time_of_estimated_departure: comm.time_of_estimated_departure,
       intersection_id: comm.intersection_id
     }
   end
