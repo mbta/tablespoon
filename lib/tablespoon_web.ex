@@ -19,7 +19,7 @@ defmodule TablespoonWeb do
 
   def controller do
     quote do
-      use Phoenix.Controller, namespace: TablespoonWeb
+      use Phoenix.Controller, formats: [html: "View"]
 
       import Plug.Conn
       alias TablespoonWeb.Router.Helpers, as: Routes

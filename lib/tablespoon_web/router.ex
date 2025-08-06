@@ -3,6 +3,7 @@ defmodule TablespoonWeb.Router do
 
   pipeline :browser do
     plug :accepts, ~w(html)
+    plug :put_root_layout, html: {TablespoonWeb.LayoutView, :app}
   end
 
   scope "/" do
