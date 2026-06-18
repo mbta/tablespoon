@@ -26,7 +26,7 @@ defmodule Tablespoon.Protocol.ASN1 do
     # INTEGER
     with {:ok, length, binary} <- decode_ber_length(binary),
          integer_length = length * 8,
-         <<value::signed-big-integer-size(integer_length), rest::binary>> <- binary do
+         <<value::signed-big-integer-size(^integer_length), rest::binary>> <- binary do
       {:ok, value, rest}
     else
       <<_::binary>> -> {:error, :wrong_length}
@@ -80,7 +80,7 @@ defmodule Tablespoon.Protocol.ASN1 do
     length_bits = length_bytes * 8
 
     case rest do
-      <<length::unsigned-big-integer-size(length_bits), rest::binary>> ->
+      <<length::unsigned-big-integer-size(^length_bits), rest::binary>> ->
         {:ok, length, rest}
 
       _ ->
@@ -120,7 +120,7 @@ defmodule Tablespoon.Protocol.ASN1 do
 
   def decode_octet_string(binary) do
     with {:ok, length, binary} <- decode_ber_length(binary),
-         <<binary::binary-size(length), rest::binary>> <- binary do
+         <<binary::binary-size(^length), rest::binary>> <- binary do
       {:ok, binary, rest}
     else
       <<_::binary>> ->

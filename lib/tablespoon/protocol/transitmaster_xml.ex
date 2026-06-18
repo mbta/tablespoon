@@ -72,7 +72,7 @@ defmodule Tablespoon.Protocol.TransitmasterXml do
 
   def decode(<<@header, size_binary::binary-6, rest::binary>> = all) do
     with {size, ""} <- Integer.parse(size_binary),
-         <<xml_binary::binary-size(size), rest::binary>> <- rest do
+         <<xml_binary::binary-size(^size), rest::binary>> <- rest do
       case decode_xml_binary(xml_binary) do
         {:ok, decoded} ->
           {:ok, decoded, rest}

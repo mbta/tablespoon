@@ -13,7 +13,6 @@ defmodule Tablespoon.Transport.FakeModem do
   @behaviour Tablespoon.Transport
 
   alias Tablespoon.Protocol.Line
-  require Logger
 
   defstruct [
     :ref,

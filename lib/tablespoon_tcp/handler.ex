@@ -37,7 +37,7 @@ defmodule TablespoonTcp.Handler do
     module_state = %{module_state | buffer: buffer}
 
     {queries, {reply, module_state}} = handle_buffer({[], module_state})
-    :ok = Enum.each(queries, &module_state.query_module.send_query/1)
+    :ok = Enum.each(queries, &module_state.query_module.send_query(&1))
 
     state = %{state | __MODULE__ => module_state}
     {reply, state}

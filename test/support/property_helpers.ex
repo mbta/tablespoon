@@ -29,7 +29,7 @@ defmodule Tablespoon.PropertyHelpers do
   defp packet_modifications(packet, size, gen_replacement) do
     gen all(
           index <- integer(0..(byte_size(packet) - 1)),
-          <<head::binary-size(index), _::binary-1, tail::binary>> = packet,
+          <<head::binary-size(^index), _::binary-1, tail::binary>> = packet,
           head <- packet_modifications(head, size - 1, gen_replacement),
           tail <-
             packet_modifications(tail, size - 1, gen_replacement),
