@@ -1,6 +1,6 @@
-ARG ELIXIR_VERSION=1.15.7
-ARG ERLANG_VERSION=26.1.2
-ARG ALPINE_VERSION=3.18.4
+ARG ELIXIR_VERSION=1.20.1
+ARG ERLANG_VERSION=29.0.2
+ARG ALPINE_VERSION=3.23.4
 FROM hexpm/elixir:$ELIXIR_VERSION-erlang-$ERLANG_VERSION-alpine-$ALPINE_VERSION AS builder
 
 # Install Hex+Rebar
@@ -29,7 +29,7 @@ FROM alpine:$ALPINE_VERSION
 
 RUN apk update \
     && apk upgrade \
-    && apk add --no-cache libstdc++ libgcc libssl1.1 ncurses-libs bash curl dumb-init \
+    && apk add --no-cache libstdc++ libgcc libssl3 ncurses-libs bash curl dumb-init \
     && rm -rf /var/cache/apk
 
 # Create non-root user
