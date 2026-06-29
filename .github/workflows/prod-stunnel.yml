@@ -3,12 +3,17 @@ name: Deploy Stunnel
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # private repo, needs permission to read
+
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
       contents: read
     concurrency: prod-linux
     env:
@@ -16,15 +21,22 @@ jobs:
       ECS_SERVICE: stunnel-prod
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: mbta/actions/deploy-ecs@v2
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: mbta/actions/deploy-ecs@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
+        permissions:
+          id-token: write # needed to deploy tags
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           ecs-cluster: ${{ env.ECS_CLUSTER }}
           ecs-service: ${{ env.ECS_SERVICE }}
           docker-tag: ghcr.io/mbta/stunnel:5.72-r0-alpine-3.19.1
           launch-type: EXTERNAL
-      - uses: mbta/actions/notify-slack-deploy@v2
+      - uses: mbta/actions/notify-slack-deploy@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
+        permissions:
+          id-token: write # needed for slack
         if: ${{ !cancelled() }}
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK }}
