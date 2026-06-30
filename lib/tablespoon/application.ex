@@ -4,7 +4,6 @@ defmodule Tablespoon.Application do
   @moduledoc false
 
   use Application
-  require Logger
   alias Tablespoon.Intersection.Config
 
   def start(_type, _args) do

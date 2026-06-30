@@ -10,8 +10,6 @@ defmodule TablespoonWeb.InitialHandler do
 
   use ThousandIsland.Handler
 
-  require Logger
-
   @type on_switch_handler ::
           {:switch, Bandit.HTTP1.Handler, data :: binary(), state :: term()}
 

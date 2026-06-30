@@ -79,8 +79,8 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
       <<id::unsigned-integer-8, vehicle_id::binary-17, vehicle_class::unsigned-integer-8,
         vehicle_class_level::unsigned-integer-8, strategy::unsigned-integer-8,
         time_of_service_desired::unsigned-integer-16,
-        time_of_estimated_departure::unsigned-integer-16,
-        intersection_id::unsigned-integer-16>> = binary
+        time_of_estimated_departure::unsigned-integer-16, intersection_id::unsigned-integer-16>> =
+        binary
 
       vehicle_id = String.trim_leading(vehicle_id, " ")
 
@@ -207,7 +207,7 @@ defmodule Tablespoon.Protocol.NTCIP1211Extended do
   def decode_id(<<48, binary::binary>>) do
     with {:ok, _, <<2, 1, 0, 4, rest::binary>>} <- ASN1.decode_ber_length(binary),
          {:ok, group_name_length, rest} <- ASN1.decode_ber_length(rest),
-         <<_ignored::binary-size(group_name_length), _pdu_tag::binary-1, rest::binary>> <- rest,
+         <<_ignored::binary-size(^group_name_length), _pdu_tag::binary-1, rest::binary>> <- rest,
          {:ok, _pdu_length, rest} <- ASN1.decode_ber_length(rest),
          {:ok, request_id, rest} when is_integer(request_id) <- ASN1.decode(rest),
          {:ok, _error, rest} <- ASN1.decode(rest),

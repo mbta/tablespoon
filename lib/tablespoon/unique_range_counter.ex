@@ -33,7 +33,7 @@ defmodule Tablespoon.UniqueRangeCounter do
   iex> unique_integer(:key2, 0, 1)
   0
   """
-  @spec unique_integer(atom, integer, integer) :: integer
+  @spec unique_integer(atom, integer, integer) :: integer | [integer]
   def unique_integer(key, min_value, max_value)
       when is_atom(key) and is_integer(min_value) and is_integer(max_value) and
              min_value < max_value do

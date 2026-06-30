@@ -75,7 +75,7 @@ defmodule Tablespoon.Protocol.PMPP do
     rest = unreplace_flag(rest)
     rest_size = byte_size(rest) - 2
 
-    <<rest::binary-size(rest_size), crc::binary-2>> = rest
+    <<rest::binary-size(^rest_size), crc::binary-2>> = rest
 
     if checksum(rest) == crc do
       <<address::unsigned-integer-8, control_binary::unsigned-integer-8,
