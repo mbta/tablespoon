@@ -4,7 +4,7 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 5 * * 1'
+    - cron: "0 5 * * 1"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -37,7 +37,6 @@ jobs:
           mix local.rebar --force
           mix local.hex --force
         if: steps.asdf-cache.outputs.cache-hit != 'true'
-
 
   build:
     name: Build and test
@@ -98,6 +97,20 @@ jobs:
       - name: Run Trivy vulnerability scanner in fs mode
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
+          scan-type: "fs"
+          scan-ref: "."
           trivy-config: trivy.yml
+
+  zizmor:
+    name: Run zizmor 🌈
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Run zizmor 🌈
+        uses: zizmorcore/zizmor-action@6599ee8b7a49aef6a770f63d261d214911a7ce02 # v0.6.0
+        with:
+          persona: pedantic
+          advanced-security: false
