@@ -44,8 +44,8 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Use tzdata for time zone info
-config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
+# Use tz for time zone info
+config :elixir, :time_zone_database, Tz.TimeZoneDatabase
 
 intersections =
   case File.read("priv/intersections.json") do

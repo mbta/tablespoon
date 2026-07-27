@@ -43,11 +43,11 @@ defmodule Tablespoon.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.8.6"},
-      {:phoenix_html, "~> 4.2.0"},
-      {:phoenix_view, "~> 2.0"},
-      {:bandit, "== 1.11.1"},
-      {:thousand_island, "== 1.4.3"},
+      {:phoenix, "~> 1.8.9"},
+      {:phoenix_html, "~> 4.3.0"},
+      {:phoenix_view, "~> 2.0.4"},
+      {:bandit, "~> 1.12"},
+      {:thousand_island, "~> 1.5"},
       {:jason, "~> 1.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
@@ -56,7 +56,7 @@ defmodule Tablespoon.MixProject do
       {:logster, "~> 1.0"},
       {:ehmon, github: "mbta/ehmon", branch: "master", only: [:prod]},
       {:fuse, "~> 2.5.0"},
-      {:tzdata, "~> 1.1"},
+      {:tz, "~> 0.28"},
       {:finch, "~> 0.23", only: :test}
     ]
   end
