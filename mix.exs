@@ -47,7 +47,7 @@ defmodule Tablespoon.MixProject do
       {:phoenix_html, "~> 4.2.0"},
       {:phoenix_view, "~> 2.0"},
       {:bandit, "== 1.11.1"},
-      {:thousand_island, "== 1.4.3"},
+      {:thousand_island, "== 1.5.0"},
       {:jason, "~> 1.0"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:lcov_ex, "~> 0.2", only: [:dev, :test], runtime: false},
