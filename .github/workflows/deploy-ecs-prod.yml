@@ -2,31 +2,40 @@ name: Deploy to ECS (Production)
 
 on: [workflow_dispatch]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # private repo, needs permission to read
+
 jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     environment: prod
-    concurrency: prod
+    permissions:
+      contents: read
+      id-token: write # Needed to communicate with AWS
     steps:
-    - uses: actions/checkout@v4
-    - uses: mbta/actions/build-push-ecr@v2
-      id: build-push
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-        docker-repo: ${{ secrets.DOCKER_REPO }}
-        docker-additional-tags: prod
-    - uses: mbta/actions/deploy-ecs@v2
-      with:
-        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-        ecs-cluster: tablespoon
-        ecs-service: tablespoon-prod
-        docker-tag: ${{ steps.build-push.outputs.docker-tag }}
-    - uses: mbta/actions/notify-slack-deploy@v2
-      if: ${{ !cancelled() }}
-      with:
-        webhook-url: ${{ secrets.SLACK_WEBHOOK }}
-        job-status: ${{ job.status }}
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: mbta/actions/build-push-ecr@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
+        id: build-push
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          docker-repo: ${{ secrets.DOCKER_REPO }}
+          docker-additional-tags: prod
+      - uses: mbta/actions/deploy-ecs@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          ecs-cluster: tablespoon
+          ecs-service: tablespoon-prod
+          docker-tag: ${{ steps.build-push.outputs.docker-tag }}
+      - uses: mbta/actions/notify-slack-deploy@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
+        if: ${{ !cancelled() }}
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          job-status: ${{ job.status }}
