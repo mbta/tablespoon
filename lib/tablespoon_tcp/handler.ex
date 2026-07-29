@@ -8,7 +8,7 @@ defmodule TablespoonTcp.Handler do
   require Logger
 
   @type t :: %__MODULE__{
-          socket: port,
+          socket: ThousandIsland.Socket.t(),
           buffer: binary,
           query_module: atom
         }
@@ -30,11 +30,13 @@ defmodule TablespoonTcp.Handler do
   @impl ThousandIsland.Handler
   def handle_data(
         data,
-        socket,
-        %{__MODULE__ => %{socket: socket, buffer: buffer} = module_state} = state
-      ) do
-    buffer = buffer <> data
-    module_state = %{module_state | buffer: buffer}
+        %ThousandIsland.Socket{socket: socket_port1},
+        %{
+          __MODULE__ => %{socket: %ThousandIsland.Socket{socket: socket_port2}} = module_state
+        } = state
+      )
+      when socket_port1 == socket_port2 do
+    module_state = update_in(module_state.buffer, &(&1 <> data))
 
     {queries, {reply, module_state}} = handle_buffer({[], module_state})
     :ok = Enum.each(queries, &module_state.query_module.send_query(&1))
