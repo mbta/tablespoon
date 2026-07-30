@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: deploy-prod-stunnel
   cancel-in-progress: true
 
 permissions:
@@ -14,11 +14,12 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-      contents: read
-    concurrency: prod-linux
     env:
       ECS_CLUSTER: linux-prod
       ECS_SERVICE: stunnel-prod
+    permissions:
+      contents: read
+      id-token: write # Needed to communicate with AWS
 
     steps:
       - name: Checkout repository
@@ -26,8 +27,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: mbta/actions/deploy-ecs@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
-        permissions:
-          id-token: write # needed to deploy tags
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           ecs-cluster: ${{ env.ECS_CLUSTER }}
@@ -35,8 +34,6 @@ jobs:
           docker-tag: ghcr.io/mbta/stunnel:5.72-r0-alpine-3.19.1
           launch-type: EXTERNAL
       - uses: mbta/actions/notify-slack-deploy@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
-        permissions:
-          id-token: write # needed for slack
         if: ${{ !cancelled() }}
         with:
           webhook-url: ${{ secrets.SLACK_WEBHOOK }}
