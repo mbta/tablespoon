@@ -53,7 +53,7 @@ jobs:
           path: ~/.asdf
           key: ${{ runner.os }}-asdf-v3-${{ hashFiles('.tool-versions') }}
         id: asdf-cache
-      - uses: mbta/actions/reshim-asdf@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
+      - uses: mbta/actions/reshim-asdf@788f8e264e9ebb1b76b927c89e6466d5a162be80 # v2.24
       - name: Restore dependencies cache
         id: deps-cache
         uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
