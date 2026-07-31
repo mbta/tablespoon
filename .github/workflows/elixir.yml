@@ -84,7 +84,7 @@ jobs:
         with:
           name: elixir-lcov
           path: cover/
-      - uses: mbta/actions/dialyzer@d37877022d4ae12e96663d2e0a970a5214a2e232 # v2.20
+      - uses: mbta/actions/dialyzer@788f8e264e9ebb1b76b927c89e6466d5a162be80 # v2.24
 
   # Temporarily disabled to allow zizmor changes to pass CI while we figure out dependency updates in a separate PR.
   # trivy:
