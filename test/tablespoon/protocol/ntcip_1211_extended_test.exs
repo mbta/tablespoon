@@ -148,7 +148,12 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
       group: StreamData.binary(),
       pdu_type: pdu_type,
       request_id: StreamData.integer(),
-      message: StreamData.one_of([gen_priority_request(), gen_priority_cancel()])
+      message:
+        StreamData.one_of([
+          gen_priority_request(),
+          gen_priority_request_absolute(),
+          gen_priority_cancel()
+        ])
     })
   end
 
@@ -162,6 +167,21 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
       strategy: strategy(),
       time_of_service_desired: time(),
       time_of_estimated_departure: time(),
+      intersection_id: intersection_id()
+    })
+  end
+
+  def gen_priority_request_absolute do
+    StreamData.fixed_map(%{
+      __struct__: StreamData.constant(NTCIP.PriorityRequestAbsolute),
+      id: priority_id(),
+      vehicle_id: vehicle_id(),
+      vehicle_class: vehicle_class(),
+      vehicle_class_level: vehicle_class_level(),
+      strategy: strategy(),
+      time_of_service_desired: time(),
+      time_of_estimated_departure: time(),
+      time_of_request: absolute_time(),
       intersection_id: intersection_id()
     })
   end
@@ -188,6 +208,7 @@ defmodule Tablespoon.Protocol.NTCIP1211ExtendedTest do
   def vehicle_class, do: StreamData.integer(1..10)
   def vehicle_class_level, do: StreamData.integer(1..10)
   def strategy, do: StreamData.integer(1..255)
-  def time, do: StreamData.integer(1..65_535)
+  def time, do: StreamData.integer(0..65_535)
+  def absolute_time, do: StreamData.integer(0..4_294_967_295)
   def intersection_id, do: StreamData.integer(1..65_535)
 end
